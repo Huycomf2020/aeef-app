@@ -107,7 +107,7 @@
   </div>
 
   <script>
-   const GAS_URL = "https://script.google.com/macros/s/AKfycby8Z3CggKB5McWgP_65bS2hoYJkqOP3bzj_Ux2USG9Ker1AU1QhLow59PJQynb78rrX/exec";
+    const GAS_URL = "https://script.google.com/macros/s/AKfycby8Z3CggKB5McWgP_65bS2hoYJkqOP3bzj_Ux2USG9Ker1AU1QhLow59PJQynb78rrX/exec";
 
     let currentStudent = '';
     let currentTopic = '';
@@ -164,48 +164,52 @@
     }
 
     async function sendMsg() {
-      const input = document.getElementById('chatInput');
-      const text = input.value.trim();
-      if (!text) return;
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text) return;
 
-      appendBubble('user', text);
-      input.value = '';
+  appendBubble('user', text);
+  input.value = '';
 
-      try {
-        const response = await fetch(GAS_URL, {
-          method: 'POST',
-          body: JSON.stringify({
-            action: 'chat',
-            studentId: currentStudent,
-            topic: currentTopic,
-            userMessage: text,
-            chatHistory: chatHistory
-          })
-        });
+  try {
+    // Mã hóa dữ liệu dạng Form URL Encoded để tránh chặn CORS
+    const payload = new URLSearchParams();
+    payload.append('action', 'chat');
+    payload.append('studentId', currentStudent);
+    payload.append('topic', currentTopic);
+    payload.append('userMessage', text);
+    payload.append('chatHistory', JSON.stringify(chatHistory));
 
-        const res = await response.json();
-        
-        if (res.needApiKey) {
-          document.getElementById('apiKeyModal').style.display = 'flex';
-          return;
-        }
+    const response = await fetch(GAS_URL, {
+      method: 'POST',
+      body: payload
+    });
 
-        if (res.success) {
-          if (res.data.recast) appendRecast("💡 " + res.data.recast);
-          const reply = (res.data.praise ? res.data.praise + " " : "") + res.data.reply;
-          appendBubble('ai', reply);
-          
-          chatHistory.push({ role: 'user', text: text });
-          chatHistory.push({ role: 'model', text: reply });
-          
-          const utter = new SpeechSynthesisUtterance(reply);
-          utter.lang = 'en-US';
-          window.speechSynthesis.speak(utter);
-        }
-      } catch (e) {
-        alert("Connection Error: " + e.message);
-      }
+    const res = await response.json();
+    
+    if (res.needApiKey) {
+      document.getElementById('apiKeyModal').style.display = 'flex';
+      return;
     }
+
+    if (res.success) {
+      if (res.data.recast) appendRecast("💡 " + res.data.recast);
+      const reply = (res.data.praise ? res.data.praise + " " : "") + res.data.reply;
+      appendBubble('ai', reply);
+      
+      chatHistory.push({ role: 'user', text: text });
+      chatHistory.push({ role: 'model', text: reply });
+      
+      const utter = new SpeechSynthesisUtterance(reply);
+      utter.lang = 'en-US';
+      window.speechSynthesis.speak(utter);
+    } else if (res.error) {
+      alert("Lỗi từ AI: " + res.error);
+    }
+  } catch (e) {
+    alert("Connection Error: " + e.message);
+  }
+}
 
     async function submitApiKey() {
       const key = document.getElementById('apiKeyInput').value.trim();
