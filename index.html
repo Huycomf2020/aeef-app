@@ -43,14 +43,12 @@
   </header>
 
   <main class="main-container">
-    <!-- MÀN HÌNH LOGIN -->
     <section id="loginScreen" class="card" style="max-width:400px;margin:50px auto;text-align:center;">
       <h2 style="color:var(--primary);margin-bottom:15px;">Welcome</h2>
       <input type="text" id="studentId" placeholder="Enter Student ID" style="width:100%;padding:12px;border-radius:10px;border:1px solid #ccc;margin-bottom:15px;" />
       <button class="btn" style="width:100%;" onclick="login()">Start Practice</button>
     </section>
 
-    <!-- MÀN HÌNH DASHBOARD -->
     <section id="dashScreen" style="display:none;">
       <h2 style="color:var(--primary);margin-bottom:20px;">Choose a Lesson</h2>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;">
@@ -67,10 +65,8 @@
       </div>
     </section>
 
-    <!-- MÀN HÌNH CHAT ROOM (CAMERA + MICRO) -->
     <section id="chatScreen" style="display:none;">
       <div class="meeting-layout">
-        <!-- KHUNG CAMERA HỌC SINH -->
         <div class="card" style="padding:10px;background:#111;">
           <div class="video-wrapper">
             <video id="userVideo" autoplay playsinline muted></video>
@@ -78,7 +74,6 @@
           </div>
         </div>
 
-        <!-- KHUNG CHAT AI -->
         <div class="card chat-box">
           <div id="chatMessages" class="chat-messages"></div>
           <div class="chat-controls">
@@ -91,102 +86,27 @@
     </section>
   </main>
 
-  <script> async function sendMsg() {
-  const input = document.getElementById('chatInput');
-  const text = input.value.trim();
-  if (!text) return;
-
-  appendBubble('user', text);
-  input.value = '';
-
-  try {
-    const response = await fetch(GAS_URL, {
-      method: 'POST',
-      body: JSON.stringify({
-        action: 'chat',
-        studentId: currentStudent,
-        topic: currentTopic,
-        userMessage: text,
-        chatHistory: chatHistory
-      })
-    });
-
-    const res = await response.json();
-    
-    // Yêu cầu nhập API Key nếu hệ thống chưa có
-    if (res.needApiKey) {
-      showApiKeyModal();
-      return;
-    }
-
-    if (res.success) {
-      if (res.data.recast) appendRecast("💡 " + res.data.recast);
-      const reply = (res.data.praise ? res.data.praise + " " : "") + res.data.reply;
-      appendBubble('ai', reply);
+  <!-- POPUP NHẬP API KEY SANG TRỌNG KÈM LINK HƯỚNG DẪN -->
+  <div id="apiKeyModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.6);z-index:99999;align-items:center;justify-content:center;">
+    <div style="background:#fff;padding:30px;border-radius:18px;max-width:420px;width:90%;box-shadow:0 10px 25px rgba(0,0,0,0.2);text-align:center;font-family:sans-serif;">
+      <h3 style="margin-bottom:12px;color:#1e6b37;">Kích hoạt Gemini API Key 🔑</h3>
+      <p style="font-size:14px;color:#666;margin-bottom:16px;">Vui lòng nhập API Key để bắt đầu sử dụng AEEF (chỉ cần nhập 1 lần duy nhất).</p>
       
-      chatHistory.push({ role: 'user', text: text });
-      chatHistory.push({ role: 'model', text: reply });
+      <input type="text" id="apiKeyInput" placeholder="Dán mã API Key (AIzaSy...)" style="width:100%;padding:12px;border:1px solid #ccc;border-radius:8px;font-size:14px;outline:none;margin-bottom:12px;box-sizing:border-box;">
       
-      // Phát âm câu trả lời của AI
-      const utter = new SpeechSynthesisUtterance(reply);
-      utter.lang = 'en-US';
-      window.speechSynthesis.speak(utter);
-    }
-  } catch (e) {
-    alert("Connection Error: " + e.message);
-  }
-}
-
-// Bảng thông báo nhập API Key chuyên nghiệp có link hướng dẫn
-function showApiKeyModal() {
-  let modal = document.getElementById('apiKeyModal');
-  if (!modal) {
-    modal = document.createElement('div');
-    modal.id = 'apiKeyModal';
-    modal.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.6);z-index:99999;display:flex;align-items:center;justify-content:center;';
-    modal.innerHTML = `
-      <div style="background:#fff;padding:30px;border-radius:18px;max-width:420px;width:90%;box-shadow:0 10px 25px rgba(0,0,0,0.2);text-align:center;font-family:sans-serif;">
-        <h3 style="margin-bottom:12px;color:#1e6b37;">Kích hoạt Gemini API Key 🔑</h3>
-        <p style="font-size:14px;color:#666;margin-bottom:16px;">Vui lòng nhập API Key để bắt đầu sử dụng AEEF (chỉ cần nhập 1 lần duy nhất).</p>
-        
-        <input type="text" id="apiKeyInput" placeholder="Dán mã API Key (AIzaSy...)" style="width:100%;padding:12px;border:1px solid #ccc;border-radius:8px;font-size:14px;outline:none;margin-bottom:10px;box-sizing:border-box;">
-        
-        <!-- DÒNG HƯỚNG DẪN KÈM LINK -->
-        <div style="margin-bottom:20px;font-size:13px;text-align:left;">
-          👉 <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#1e6b37;font-weight:bold;text-decoration:underline;">
-            Cách lấy API Key miễn phí dễ nhất (1 phút) 🚀
-          </a>
-        </div>
-
-        <button onclick="submitApiKey()" style="width:100%;background:#1e6b37;color:#fff;padding:12px;border:none;border-radius:25px;font-weight:bold;font-size:15px;cursor:pointer;">
-          Lưu Chìa Khóa & Tiếp Tục
-        </button>
+      <div style="margin-bottom:20px;font-size:13.5px;text-align:left;background:#f0fdf4;padding:10px 12px;border-radius:8px;border:1px solid #bbf7d0;">
+        👉 <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#1e6b37;font-weight:bold;text-decoration:underline;">
+          Bấm vào đây để lấy API Key miễn phí (1 phút) 🚀
+        </a>
       </div>
-    `;
-    document.body.appendChild(modal);
-  }
-  modal.style.display = 'flex';
-}
 
-async function submitApiKey() {
-  const key = document.getElementById('apiKeyInput').value.trim();
-  if (!key) return alert("Vui lòng dán mã API Key!");
+      <button onclick="submitApiKey()" style="width:100%;background:#1e6b37;color:#fff;padding:12px;border:none;border-radius:25px;font-weight:bold;font-size:15px;cursor:pointer;">
+        Lưu Chìa Khóa & Tiếp Tục
+      </button>
+    </div>
+  </div>
 
-  try {
-    const res = await fetch(GAS_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'saveApiKey', apiKey: key })
-    });
-    const data = await res.json();
-    if (data.success) {
-      alert("Đã lưu API Key thành công! Vui lòng bấm Send để gửi lại tin nhắn.");
-      document.getElementById('apiKeyModal').style.display = 'none';
-    }
-  } catch (e) {
-    alert("Lỗi lưu API Key: " + e.message);
-  }
-}
-    // ⚠️ THAY LINK WEB APP GOOGLE APPS SCRIPT CỦA THẦY VÀO DÒNG DƯỚI DÂY:
+  <script>
     const GAS_URL = "https://script.google.com/macros/s/AKfycby8Z3CggKB5McWgP_65bS2hoYJkqOP3bzj_Ux2USG9Ker1AU1QhLow59PJQynb78rrX/exec";
 
     let currentStudent = '';
@@ -211,7 +131,6 @@ async function submitApiKey() {
       
       appendBubble('ai', `Hello! I'm your ${topic} companion. Let's practice English together!`);
       
-      // BẬT CAMERA TRỰC TIẾP
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         document.getElementById('userVideo').srcObject = stream;
@@ -265,12 +184,9 @@ async function submitApiKey() {
         });
 
         const res = await response.json();
+        
         if (res.needApiKey) {
-          const key = prompt("Enter Gemini API Key:");
-          if (key) {
-            await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'saveApiKey', apiKey: key }) });
-            alert("API Key saved! Please send message again.");
-          }
+          document.getElementById('apiKeyModal').style.display = 'flex';
           return;
         }
 
@@ -282,13 +198,31 @@ async function submitApiKey() {
           chatHistory.push({ role: 'user', text: text });
           chatHistory.push({ role: 'model', text: reply });
           
-          // Đọc câu trả lời của AI
           const utter = new SpeechSynthesisUtterance(reply);
           utter.lang = 'en-US';
           window.speechSynthesis.speak(utter);
         }
       } catch (e) {
         alert("Connection Error: " + e.message);
+      }
+    }
+
+    async function submitApiKey() {
+      const key = document.getElementById('apiKeyInput').value.trim();
+      if (!key) return alert("Vui lòng dán mã API Key!");
+
+      try {
+        const res = await fetch(GAS_URL, {
+          method: 'POST',
+          body: JSON.stringify({ action: 'saveApiKey', apiKey: key })
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert("Đã lưu API Key thành công! Vui lòng bấm Send để gửi lại tin nhắn.");
+          document.getElementById('apiKeyModal').style.display = 'none';
+        }
+      } catch (e) {
+        alert("Lỗi lưu API Key: " + e.message);
       }
     }
 
