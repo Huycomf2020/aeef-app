@@ -166,58 +166,127 @@
       else recognition.start();
     }
    async function sendMsg() {
-      const input = document.getElementById('chatInput');
-      const text = input.value.trim();
-      if (!text) return;
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text) return;
 
-      appendBubble('user', text);
-      input.value = '';
+  // Hiển thị bóng chat của người dùng
+  appendBubble('user', text);
+  input.value = '';
 
-      try {
-        const response = await fetch(GAS_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({
-            action: 'chat',
-            studentId: currentStudent,
-            topic: currentTopic,
-            userMessage: text,
-            chatHistory: chatHistory
-          })
-        });
+  // 1. Hiển thị trạng thái "Thinking..."
+  showStatus("🤔 AI is thinking...");
 
-        const res = await response.json();
-        
-        if (res.needApiKey) {
-          document.getElementById('apiKeyModal').style.display = 'flex';
-          return;
-        }
+  try {
+    const response = await fetch(GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({
+        action: 'chat',
+        studentId: currentStudent,
+        topic: currentTopic,
+        userMessage: text,
+        chatHistory: chatHistory
+      })
+    });
 
-        if (res.success) {
-          if (res.data.recast) appendRecast("💡 " + res.data.recast);
-          const reply = (res.data.praise ? res.data.praise + " " : "") + res.data.reply;
-          appendBubble('ai', reply);
-          
-          chatHistory.push({ role: 'user', text: text });
-          chatHistory.push({ role: 'model', text: reply });
-          
-          // Phát âm với giọng đọc tự nhiên, truyền cảm
-          const utter = new SpeechSynthesisUtterance(reply);
-          utter.lang = 'en-US';
-          utter.rate = 0.95;
+    const res = await response.json();
+    removeStatus(); // Xóa trạng thái Thinking
 
-          const voices = window.speechSynthesis.getVoices();
-          const naturalVoice = voices.find(v => v.lang.includes('en') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Jenny')));
-          if (naturalVoice) utter.voice = naturalVoice;
-
-          window.speechSynthesis.speak(utter);
-        } else if (res.error) {
-          alert("Lỗi AI: " + res.error);
-        }
-      } catch (e) {
-        alert("Connection Error: " + e.message);
-      }
+    if (res.needApiKey) {
+      document.getElementById('apiKeyModal').style.display = 'flex';
+      return;
     }
+
+    if (res.success) {
+      const data = res.data;
+
+      // Hiển thị Thẻ trình độ (Level Badge) & Recast / Sửa ngữ pháp
+      if (data.level) appendLevelBadge(data.level);
+      if (data.recast) appendRecast("💡 Sửa ngữ pháp: " + data.recast);
+      if (data.pronunciationNote) appendRecast("🗣️ Mẹo phát âm: " + data.pronunciationNote);
+
+      const reply = (data.praise ? data.praise + " " : "") + data.reply;
+      appendBubble('ai', reply);
+
+      chatHistory.push({ role: 'user', text: text });
+      chatHistory.push({ role: 'model', text: reply });
+
+      // Phát âm lời đáp của AI
+      const utter = new SpeechSynthesisUtterance(reply);
+      utter.lang = 'en-US';
+      utter.rate = 0.9; // Tốc độ nói A1-A2 vừa phải, dễ nghe
+
+      // Sau khi AI nói xong -> TỰ ĐỘNG BẬT MIC Lại để học sinh nói tiếp
+      utter.onend = () => {
+        startListening(); 
+      };
+
+      window.speechSynthesis.speak(utter);
+    } else if (res.error) {
+      alert("Lỗi AI: " + res.error);
+    }
+  } catch (e) {
+    removeStatus();
+    alert("Connection Error: " + e.message);
+  }
+}
+
+// Hàm khởi động Mic kèm trạng thái "Listening..."
+function startListening() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) return;
+
+  if (!recognition) {
+    recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    
+    recognition.onstart = () => {
+      isListening = true;
+      document.getElementById('micBtn').classList.add('recording');
+      showStatus("🎙️ Listening... Speak now!");
+    };
+
+    recognition.onresult = (e) => {
+      const transcript = e.results[0][0].transcript;
+      document.getElementById('chatInput').value = transcript;
+      removeStatus();
+      sendMsg(); // Tự động gửi
+    };
+
+    recognition.onend = () => {
+      isListening = false;
+      document.getElementById('micBtn').classList.remove('recording');
+      removeStatus();
+    };
+  }
+
+  try { recognition.start(); } catch(err){}
+}
+
+// Các hàm tiện ích hiển thị Trạng thái
+function showStatus(msg) {
+  removeStatus();
+  const chatMessages = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.id = 'statusIndicator';
+  div.className = 'status-indicator';
+  div.innerText = msg;
+  chatMessages.appendChild(div);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function removeStatus() {
+  const el = document.getElementById('statusIndicator');
+  if (el) el.remove();
+}
+
+function appendLevelBadge(level) {
+  const chatMessages = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.innerHTML = `<span class="level-badge">Trình độ ghi nhận: CEFR ${level}</span>`;
+  chatMessages.appendChild(div);
+}
     async function submitApiKey() {
       const key = document.getElementById('apiKeyInput').value.trim();
       if (!key) return alert("Vui lòng dán mã API Key!");
@@ -254,6 +323,23 @@
       container.appendChild(div);
       container.scrollTop = container.scrollHeight;
     }
-  </script>
+  </script>.status-indicator {
+  font-size: 0.85rem;
+  font-style: italic;
+  color: #666;
+  margin: 5px 15px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.level-badge {
+  background: #e8f5e9;
+  color: #2e7d32;
+  font-size: 0.75rem;
+  font-weight: bold;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 5px;
+}
 </body>
 </html>
