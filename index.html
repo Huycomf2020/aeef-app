@@ -172,21 +172,21 @@
   input.value = '';
 
   try {
-    // Mã hóa dữ liệu dạng Form URL Encoded để tránh chặn CORS
-    const payload = new URLSearchParams();
-    payload.append('action', 'chat');
-    payload.append('studentId', currentStudent);
-    payload.append('topic', currentTopic);
-    payload.append('userMessage', text);
-    payload.append('chatHistory', JSON.stringify(chatHistory));
-
     const response = await fetch(GAS_URL, {
       method: 'POST',
-      body: payload
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // Dùng text/plain để vượt qua rào cản CORS
+      body: JSON.stringify({
+        action: 'chat',
+        studentId: currentStudent,
+        topic: currentTopic,
+        userMessage: text,
+        chatHistory: chatHistory
+      })
     });
 
     const res = await response.json();
     
+    // Nếu Backend báo chưa có API Key
     if (res.needApiKey) {
       document.getElementById('apiKeyModal').style.display = 'flex';
       return;
@@ -204,13 +204,12 @@
       utter.lang = 'en-US';
       window.speechSynthesis.speak(utter);
     } else if (res.error) {
-      alert("Lỗi từ AI: " + res.error);
+      alert("Lỗi AI: " + res.error);
     }
   } catch (e) {
     alert("Connection Error: " + e.message);
   }
 }
-
     async function submitApiKey() {
       const key = document.getElementById('apiKeyInput').value.trim();
       if (!key) return alert("Vui lòng dán mã API Key!");
