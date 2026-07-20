@@ -5,63 +5,54 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AEEF - AI English Speaking Companion</title>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <style>.status-indicator {
-  font-size: 0.85rem;
-  font-style: italic;
-  color: #666;
-  margin: 5px 15px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.level-badge {
-  background: #e8f5e9;
-  color: #2e7d32;
-  font-size: 0.75rem;
-  font-weight: bold;
-  padding: 2px 6px;
-  border-radius: 4px;
-  margin-left: 5px;
-}
+  <style>
     :root { --primary: #1e6b37; --bg: #f4f7f6; --card: #ffffff; --text: #2c3e50; }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
     body { background: var(--bg); color: var(--text); min-height: 100vh; }
+    
     .app-header { background: #fff; padding: 16px 40px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.03); }
     .logo { width: 40px; height: 40px; background: var(--primary); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 20px; }
     .main-container { max-width: 1000px; margin: 30px auto; padding: 0 20px; }
     .card { background: var(--card); border-radius: 18px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); margin-bottom: 25px; }
     .btn { padding: 14px 28px; border: none; border-radius: 30px; background: var(--primary); color: #fff; font-weight: 600; cursor: pointer; }
+    
     .meeting-layout { display: grid; grid-template-columns: 300px 1fr; gap: 20px; }
     @media (max-width: 768px) { .meeting-layout { grid-template-columns: 1fr; } }
+    
     .video-wrapper { position: relative; width: 100%; height: 220px; background: #000; border-radius: 12px; overflow: hidden; }
     .video-wrapper video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
     .video-overlay { position: absolute; bottom: 10px; left: 10px; background: rgba(0,0,0,0.6); color: #fff; padding: 4px 10px; border-radius: 20px; font-size: 12px; }
+    
     .chat-box { display: flex; flex-direction: column; height: 480px; }
     .chat-messages { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding-right: 8px; }
     .chat-bubble { max-width: 80%; padding: 12px 18px; border-radius: 16px; font-size: 15px; }
     .ai-bubble { background: #e9ecef; align-self: flex-start; }
     .user-bubble { background: var(--primary); color: #fff; align-self: flex-end; }
     .recast-box { background: #fff8e6; border-left: 4px solid #f1c40f; padding: 8px 12px; border-radius: 8px; font-size: 13px; align-self: flex-start; }
+    
     .chat-controls { display: flex; gap: 10px; margin-top: 15px; }
     .chat-controls input { flex: 1; padding: 12px 20px; border: 1px solid #ccc; border-radius: 30px; outline: none; }
     .mic-btn { width: 45px; height: 45px; border-radius: 50%; border: none; background: var(--primary); color: #fff; font-size: 18px; cursor: pointer; }
     .mic-btn.recording { background: #dc3545; animation: pulse 1s infinite; }
     @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(220,53,69,0.4); } 70% { box-shadow: 0 0 0 10px rgba(220,53,69,0); } }
+
+    /* Indicator & Badge CSS */
+    .status-indicator { font-size: 0.85rem; font-style: italic; color: #666; margin: 5px 15px; display: flex; align-items: center; gap: 6px; }
+    .level-badge { background: #e8f5e9; color: #2e7d32; font-size: 0.75rem; font-weight: bold; padding: 2px 6px; border-radius: 4px; margin-left: 5px; align-self: flex-start; }
   </style>
 </head>
 <body>
 
   <header class="app-header">
-  <div style="display:flex;align-items:center;gap:12px;">
-    <div class="logo">A</div>
-    <h1 style="color:var(--primary);font-size:20px;">AEEF Classroom</h1>
-  </div>
-  <div style="display:flex; align-items:center; gap:15px;">
-    <div style="font-weight:600;">👤 <span id="studentDisplay">Guest</span></div>
-    <!-- Nút Đổi API Key mới thêm vào đây -->
-    <button class="btn" onclick="openKeyModal()" style="padding: 6px 12px; font-size: 0.85rem; background:#2e7d32; color:#fff; border:none; border-radius:6px; cursor:pointer; position:relative; z-index:99;">🔑 Đổi API Key</button>
-  </div>
-</header>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div class="logo">A</div>
+      <h1 style="color:var(--primary);font-size:20px;">AEEF Classroom</h1>
+    </div>
+    <div style="display:flex; align-items:center; gap:15px;">
+      <div style="font-weight:600;">👤 <span id="studentDisplay">Guest</span></div>
+      <button class="btn" onclick="openKeyModal()" style="padding: 6px 12px; font-size: 0.85rem; background:#2e7d32; color:#fff; border:none; border-radius:6px; cursor:pointer;">🔑 Đổi API Key</button>
+    </div>
+  </header>
 
   <main class="main-container">
     <section id="loginScreen" class="card" style="max-width:400px;margin:50px auto;text-align:center;">
@@ -105,27 +96,28 @@
         </div>
       </div>
     </section>
-  </main>
 
-  <!-- POPUP NHẬP API KEY SANG TRỌNG KÈM LINK HƯỚNG DẪN -->
-  <div id="apiKeyModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.6);z-index:99999;align-items:center;justify-content:center;">
-    <div style="background:#fff;padding:30px;border-radius:18px;max-width:420px;width:90%;box-shadow:0 10px 25px rgba(0,0,0,0.2);text-align:center;font-family:sans-serif;">
-      <h3 style="margin-bottom:12px;color:#1e6b37;">Kích hoạt Gemini API Key 🔑</h3>
-      <p style="font-size:14px;color:#666;margin-bottom:16px;">Vui lòng nhập API Key để bắt đầu sử dụng AEEF (chỉ cần nhập 1 lần duy nhất).</p>
-      
-      <input type="text" id="apiKeyInput" placeholder="Dán mã API Key (AIzaSy...)" style="width:100%;padding:12px;border:1px solid #ccc;border-radius:8px;font-size:14px;outline:none;margin-bottom:12px;box-sizing:border-box;">
-      
-      <div style="margin-bottom:20px;font-size:13.5px;text-align:left;background:#f0fdf4;padding:10px 12px;border-radius:8px;border:1px solid #bbf7d0;">
-        👉 <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#1e6b37;font-weight:bold;text-decoration:underline;">
-          Bấm vào đây để lấy API Key miễn phí (1 phút) 🚀
-        </a>
+    <!-- Modal nhập API Key duy nhất -->
+    <div id="apiKeyModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.6); z-index:99999; align-items:center; justify-content:center;">
+      <div style="background:#fff; padding:30px; border-radius:18px; max-width:420px; width:90%; box-shadow:0 10px 25px rgba(0,0,0,0.2); text-align:center;">
+        <h3 style="margin-bottom:12px; color:#1e6b37;">Kích hoạt Gemini API Key 🔑</h3>
+        <p style="font-size:14px; color:#666; margin-bottom:16px;">Vui lòng nhập API Key để bắt đầu sử dụng AEEF.</p>
+        
+        <input type="password" id="apiKeyInput" placeholder="Dán mã API Key (AIzaSy...)" style="width:100%; padding:12px; border:1px solid #ccc; border-radius:8px; font-size:14px; outline:none; margin-bottom:12px; box-sizing:border-box;">
+        
+        <div style="margin-bottom:20px; font-size:13.5px; text-align:left; background:#f0fdf4; padding:10px 12px; border-radius:8px; border:1px solid #bbf7d0;">
+          👉 <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#1e6b37; font-weight:bold; text-decoration:underline;">
+            Bấm vào đây để lấy API Key miễn phí (1 phút) 🚀
+          </a>
+        </div>
+
+        <div style="display:flex; gap:10px;">
+          <button onclick="closeKeyModal()" style="flex:1; padding:12px; border:1px solid #ccc; background:#f5f5f5; border-radius:25px; cursor:pointer;">Hủy</button>
+          <button onclick="saveApiKey()" style="flex:1; background:#1e6b37; color:#fff; padding:12px; border:none; border-radius:25px; font-weight:bold; cursor:pointer;">Lưu Key</button>
+        </div>
       </div>
-
-      <button onclick="submitApiKey()" style="width:100%;background:#1e6b37;color:#fff;padding:12px;border:none;border-radius:25px;font-weight:bold;font-size:15px;cursor:pointer;">
-        Lưu Chìa Khóa & Tiếp Tục
-      </button>
     </div>
-  </div>
+  </main>
 
   <script>
     const GAS_URL = "https://script.google.com/macros/s/AKfycby8Z3CggKB5McWgP_65bS2hoYJkqOP3bzj_Ux2USG9Ker1AU1QhLow59PJQynb78rrX/exec";
@@ -170,161 +162,143 @@
         recognition.onstart = () => {
           isListening = true;
           document.getElementById('micBtn').classList.add('recording');
+          showStatus("🎙️ Listening... Speak now!");
         };
         recognition.onresult = (e) => {
           const transcript = e.results[0][0].transcript;
           document.getElementById('chatInput').value = transcript;
-          // TỰ ĐỘNG GỬI NGAY KHI NÓI XONG 🚀
+          removeStatus();
           sendMsg();
         };
         recognition.onend = () => {
           isListening = false;
           document.getElementById('micBtn').classList.remove('recording');
+          removeStatus();
         };
       }
 
       if (isListening) recognition.stop();
       else recognition.start();
     }
-   async function sendMsg() {
-  const input = document.getElementById('chatInput');
-  const text = input.value.trim();
-  if (!text) return;
 
-  // Hiển thị bóng chat của người dùng
-  appendBubble('user', text);
-  input.value = '';
+    function startListening() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) return;
 
-  // 1. Hiển thị trạng thái "Thinking..."
-  showStatus("🤔 AI is thinking...");
+      if (!recognition) {
+        recognition = new SpeechRecognition();
+        recognition.lang = 'en-US';
+        
+        recognition.onstart = () => {
+          isListening = true;
+          document.getElementById('micBtn').classList.add('recording');
+          showStatus("🎙️ Listening... Speak now!");
+        };
 
-  try {
-    const response = await fetch(GAS_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({
-        action: 'chat',
-        studentId: currentStudent,
-        topic: currentTopic,
-        userMessage: text,
-        chatHistory: chatHistory
-      })
-    });
+        recognition.onresult = (e) => {
+          const transcript = e.results[0][0].transcript;
+          document.getElementById('chatInput').value = transcript;
+          removeStatus();
+          sendMsg();
+        };
 
-    const res = await response.json();
-    removeStatus(); // Xóa trạng thái Thinking
+        recognition.onend = () => {
+          isListening = false;
+          document.getElementById('micBtn').classList.remove('recording');
+          removeStatus();
+        };
+      }
 
-    if (res.needApiKey) {
-      document.getElementById('apiKeyModal').style.display = 'flex';
-      return;
+      try { recognition.start(); } catch(err){}
     }
 
-    if (res.success) {
-      const data = res.data;
+    async function sendMsg() {
+      const input = document.getElementById('chatInput');
+      const text = input.value.trim();
+      if (!text) return;
 
-      // Hiển thị Thẻ trình độ (Level Badge) & Recast / Sửa ngữ pháp
-      if (data.level) appendLevelBadge(data.level);
-      if (data.recast) appendRecast("💡 Sửa ngữ pháp: " + data.recast);
-      if (data.pronunciationNote) appendRecast("🗣️ Mẹo phát âm: " + data.pronunciationNote);
+      appendBubble('user', text);
+      input.value = '';
 
-      const reply = (data.praise ? data.praise + " " : "") + data.reply;
-      appendBubble('ai', reply);
-
-      chatHistory.push({ role: 'user', text: text });
-      chatHistory.push({ role: 'model', text: reply });
-
-      // Phát âm lời đáp của AI
-      const utter = new SpeechSynthesisUtterance(reply);
-      utter.lang = 'en-US';
-      utter.rate = 0.9; // Tốc độ nói A1-A2 vừa phải, dễ nghe
-
-      // Sau khi AI nói xong -> TỰ ĐỘNG BẬT MIC Lại để học sinh nói tiếp
-      utter.onend = () => {
-        startListening(); 
-      };
-
-      window.speechSynthesis.speak(utter);
-    } else if (res.error) {
-      alert("Lỗi AI: " + res.error);
-    }
-  } catch (e) {
-    removeStatus();
-    alert("Connection Error: " + e.message);
-  }
-}
-
-// Hàm khởi động Mic kèm trạng thái "Listening..."
-function startListening() {
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) return;
-
-  if (!recognition) {
-    recognition = new SpeechRecognition();
-    recognition.lang = 'en-US';
-    
-    recognition.onstart = () => {
-      isListening = true;
-      document.getElementById('micBtn').classList.add('recording');
-      showStatus("🎙️ Listening... Speak now!");
-    };
-
-    recognition.onresult = (e) => {
-      const transcript = e.results[0][0].transcript;
-      document.getElementById('chatInput').value = transcript;
-      removeStatus();
-      sendMsg(); // Tự động gửi
-    };
-
-    recognition.onend = () => {
-      isListening = false;
-      document.getElementById('micBtn').classList.remove('recording');
-      removeStatus();
-    };
-  }
-
-  try { recognition.start(); } catch(err){}
-}
-
-// Các hàm tiện ích hiển thị Trạng thái
-function showStatus(msg) {
-  removeStatus();
-  const chatMessages = document.getElementById('chatMessages');
-  const div = document.createElement('div');
-  div.id = 'statusIndicator';
-  div.className = 'status-indicator';
-  div.innerText = msg;
-  chatMessages.appendChild(div);
-  chatMessages.scrollTop = chatMessages.scrollHeight;
-}
-
-function removeStatus() {
-  const el = document.getElementById('statusIndicator');
-  if (el) el.remove();
-}
-
-function appendLevelBadge(level) {
-  const chatMessages = document.getElementById('chatMessages');
-  const div = document.createElement('div');
-  div.innerHTML = `<span class="level-badge">Trình độ ghi nhận: CEFR ${level}</span>`;
-  chatMessages.appendChild(div);
-}
-    async function submitApiKey() {
-      const key = document.getElementById('apiKeyInput').value.trim();
-      if (!key) return alert("Vui lòng dán mã API Key!");
+      showStatus("🤔 AI is thinking...");
 
       try {
-        const res = await fetch(GAS_URL, {
+        const response = await fetch(GAS_URL, {
           method: 'POST',
-          body: JSON.stringify({ action: 'saveApiKey', apiKey: key })
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            action: 'chat',
+            studentId: currentStudent,
+            topic: currentTopic,
+            userMessage: text,
+            chatHistory: chatHistory
+          })
         });
-        const data = await res.json();
-        if (data.success) {
-          alert("Đã lưu API Key thành công! Vui lòng bấm Send để gửi lại tin nhắn.");
-          document.getElementById('apiKeyModal').style.display = 'none';
+
+        const res = await response.json();
+        removeStatus();
+
+        if (res.needApiKey) {
+          openKeyModal();
+          return;
+        }
+
+        if (res.success) {
+          const data = res.data;
+
+          if (data.level) appendLevelBadge(data.level);
+          if (data.recast) appendRecast("💡 Sửa ngữ pháp: " + data.recast);
+          if (data.pronunciationNote) appendRecast("🗣️ Mẹo phát âm: " + data.pronunciationNote);
+
+          const reply = (data.praise ? data.praise + " " : "") + data.reply;
+          appendBubble('ai', reply);
+
+          chatHistory.push({ role: 'user', text: text });
+          chatHistory.push({ role: 'model', text: reply });
+
+          const utter = new SpeechSynthesisUtterance(reply);
+          utter.lang = 'en-US';
+          utter.rate = 0.9;
+
+          const voices = window.speechSynthesis.getVoices();
+          const naturalVoice = voices.find(v => v.lang.includes('en') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Jenny')));
+          if (naturalVoice) utter.voice = naturalVoice;
+
+          utter.onend = () => {
+            startListening();
+          };
+
+          window.speechSynthesis.speak(utter);
+        } else if (res.error) {
+          alert("Lỗi AI: " + res.error);
         }
       } catch (e) {
-        alert("Lỗi lưu API Key: " + e.message);
+        removeStatus();
+        alert("Connection Error: " + e.message);
       }
+    }
+
+    function showStatus(msg) {
+      removeStatus();
+      const chatMessages = document.getElementById('chatMessages');
+      const div = document.createElement('div');
+      div.id = 'statusIndicator';
+      div.className = 'status-indicator';
+      div.innerText = msg;
+      chatMessages.appendChild(div);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function removeStatus() {
+      const el = document.getElementById('statusIndicator');
+      if (el) el.remove();
+    }
+
+    function appendLevelBadge(level) {
+      const chatMessages = document.getElementById('chatMessages');
+      const div = document.createElement('div');
+      div.innerHTML = `<span class="level-badge">Trình độ ghi nhận: CEFR ${level}</span>`;
+      chatMessages.appendChild(div);
     }
 
     function appendBubble(sender, text) {
@@ -344,53 +318,41 @@ function appendLevelBadge(level) {
       container.appendChild(div);
       container.scrollTop = container.scrollHeight;
     }
-    // Hàm mở lại bảng nhập API Key thủ công
-function openKeyModal() {
-  document.getElementById('apiKeyModal').style.display = 'flex';
-}
 
-// Hàm đóng Modal khi bấm Hủy/Đóng
-function closeKeyModal() {
-  document.getElementById('apiKeyModal').style.display = 'none';
-}
- <!-- Modal nhập API Key nổi lên trên cùng -->
-<div id="apiKeyModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.6); justify-content:center; align-items:center; z-index:99999;">
-  <div style="background:#ffffff; padding:24px; border-radius:12px; width:90%; max-width:400px; box-shadow:0 10px 25px rgba(0,0,0,0.3);">
-    <h3 style="margin-top:0; color:#1e6b37;">🔑 Cấu hình Gemini API Key</h3>
-    <p style="font-size:0.9rem; color:#555;">Nhập Google Gemini API Key mới của thầy vào đây:</p>
-    <input type="password" id="apiKeyInput" placeholder="AIzaSy..." style="width:100%; padding:10px; margin:12px 0; border:1px solid #ccc; border-radius:6px; box-sizing:border-box;" />
-    <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:10px;">
-      <button onclick="closeKeyModal()" style="padding:8px 16px; border:1px solid #ccc; background:#f5f5f5; border-radius:6px; cursor:pointer;">Hủy</button>
-      <button onclick="saveApiKey()" style="padding:8px 16px; background:#1e6b37; color:#fff; border:none; border-radius:6px; cursor:pointer;">Lưu Key</button>
-    </div>
-  </div>
-</div>
-  async function saveApiKey() {
-  const key = document.getElementById('apiKeyInput').value.trim();
-  if (!key) return alert("Vui lòng nhập API Key!");
-
-  try {
-    const response = await fetch(GAS_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({
-        action: 'saveApiKey',
-        apiKey: key
-      })
-    });
-
-    const res = await response.json();
-    if (res.success) {
-      alert("Đã cập nhật API Key mới thành công!");
-      document.getElementById('apiKeyInput').value = ''; // Xóa chữ trong ô nhập
-      closeKeyModal(); // Tự động đóng bảng Modal
-    } else {
-      alert("Lỗi: " + res.error);
+    function openKeyModal() {
+      document.getElementById('apiKeyModal').style.display = 'flex';
     }
-  } catch (e) {
-    alert("Không thể lưu Key: " + e.message);
-  }
-}
+
+    function closeKeyModal() {
+      document.getElementById('apiKeyModal').style.display = 'none';
+    }
+
+    async function saveApiKey() {
+      const key = document.getElementById('apiKeyInput').value.trim();
+      if (!key) return alert("Vui lòng dán mã API Key!");
+
+      try {
+        const response = await fetch(GAS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            action: 'saveApiKey',
+            apiKey: key
+          })
+        });
+
+        const res = await response.json();
+        if (res.success) {
+          alert("Đã cập nhật API Key mới thành công!");
+          document.getElementById('apiKeyInput').value = '';
+          closeKeyModal();
+        } else {
+          alert("Lỗi: " + res.error);
+        }
+      } catch (e) {
+        alert("Không thể lưu Key: " + e.message);
+      }
+    }
   </script>
 </body>
 </html>
