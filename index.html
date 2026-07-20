@@ -151,7 +151,10 @@
           document.getElementById('micBtn').classList.add('recording');
         };
         recognition.onresult = (e) => {
-          document.getElementById('chatInput').value = e.results[0][0].transcript;
+          const transcript = e.results[0][0].transcript;
+          document.getElementById('chatInput').value = transcript;
+          // TỰ ĐỘNG GỬI NGAY KHI NÓI XONG 🚀
+          sendMsg();
         };
         recognition.onend = () => {
           isListening = false;
@@ -162,54 +165,59 @@
       if (isListening) recognition.stop();
       else recognition.start();
     }
+   async function sendMsg() {
+      const input = document.getElementById('chatInput');
+      const text = input.value.trim();
+      if (!text) return;
 
-    async function sendMsg() {
-  const input = document.getElementById('chatInput');
-  const text = input.value.trim();
-  if (!text) return;
+      appendBubble('user', text);
+      input.value = '';
 
-  appendBubble('user', text);
-  input.value = '';
+      try {
+        const response = await fetch(GAS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            action: 'chat',
+            studentId: currentStudent,
+            topic: currentTopic,
+            userMessage: text,
+            chatHistory: chatHistory
+          })
+        });
 
-  try {
-    const response = await fetch(GAS_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // Dùng text/plain để vượt qua rào cản CORS
-      body: JSON.stringify({
-        action: 'chat',
-        studentId: currentStudent,
-        topic: currentTopic,
-        userMessage: text,
-        chatHistory: chatHistory
-      })
-    });
+        const res = await response.json();
+        
+        if (res.needApiKey) {
+          document.getElementById('apiKeyModal').style.display = 'flex';
+          return;
+        }
 
-    const res = await response.json();
-    
-    // Nếu Backend báo chưa có API Key
-    if (res.needApiKey) {
-      document.getElementById('apiKeyModal').style.display = 'flex';
-      return;
+        if (res.success) {
+          if (res.data.recast) appendRecast("💡 " + res.data.recast);
+          const reply = (res.data.praise ? res.data.praise + " " : "") + res.data.reply;
+          appendBubble('ai', reply);
+          
+          chatHistory.push({ role: 'user', text: text });
+          chatHistory.push({ role: 'model', text: reply });
+          
+          // Phát âm với giọng đọc tự nhiên, truyền cảm
+          const utter = new SpeechSynthesisUtterance(reply);
+          utter.lang = 'en-US';
+          utter.rate = 0.95;
+
+          const voices = window.speechSynthesis.getVoices();
+          const naturalVoice = voices.find(v => v.lang.includes('en') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Jenny')));
+          if (naturalVoice) utter.voice = naturalVoice;
+
+          window.speechSynthesis.speak(utter);
+        } else if (res.error) {
+          alert("Lỗi AI: " + res.error);
+        }
+      } catch (e) {
+        alert("Connection Error: " + e.message);
+      }
     }
-
-    if (res.success) {
-      if (res.data.recast) appendRecast("💡 " + res.data.recast);
-      const reply = (res.data.praise ? res.data.praise + " " : "") + res.data.reply;
-      appendBubble('ai', reply);
-      
-      chatHistory.push({ role: 'user', text: text });
-      chatHistory.push({ role: 'model', text: reply });
-      
-      const utter = new SpeechSynthesisUtterance(reply);
-      utter.lang = 'en-US';
-      window.speechSynthesis.speak(utter);
-    } else if (res.error) {
-      alert("Lỗi AI: " + res.error);
-    }
-  } catch (e) {
-    alert("Connection Error: " + e.message);
-  }
-}
     async function submitApiKey() {
       const key = document.getElementById('apiKeyInput').value.trim();
       if (!key) return alert("Vui lòng dán mã API Key!");
