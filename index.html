@@ -14,7 +14,8 @@
     .logo { width: 40px; height: 40px; background: var(--primary); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 20px; }
     .main-container { max-width: 1000px; margin: 30px auto; padding: 0 20px; }
     .card { background: var(--card); border-radius: 18px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); margin-bottom: 25px; }
-    .btn { padding: 14px 28px; border: none; border-radius: 30px; background: var(--primary); color: #fff; font-weight: 600; cursor: pointer; }
+    .btn { padding: 12px 24px; border: none; border-radius: 30px; background: var(--primary); color: #fff; font-weight: 600; cursor: pointer; }
+    .btn-danger { background: #dc3545; color: #fff; }
     
     .meeting-layout { display: grid; grid-template-columns: 300px 1fr; gap: 20px; }
     @media (max-width: 768px) { .meeting-layout { grid-template-columns: 1fr; } }
@@ -39,6 +40,12 @@
     .status-indicator { font-size: 0.85rem; font-style: italic; color: #666; margin: 5px 15px; display: flex; align-items: center; gap: 6px; }
     .level-badge { background: #e8f5e9; color: #2e7d32; font-size: 0.75rem; font-weight: bold; padding: 2px 6px; border-radius: 4px; margin-left: 5px; align-self: flex-start; }
     .unit-tag { font-size: 0.8rem; font-weight: 700; color: #1e6b37; text-transform: uppercase; margin-bottom: 4px; }
+
+    /* Score Modal Grid */
+    .score-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin: 15px 0; }
+    .score-item { background: #f8f9fa; padding: 12px; border-radius: 10px; text-align: center; border: 1px solid #e9ecef; }
+    .score-value { font-size: 1.4rem; font-weight: 700; color: var(--primary); }
+    .score-label { font-size: 0.75rem; color: #666; text-transform: uppercase; }
   </style>
 </head>
 <body>
@@ -69,6 +76,11 @@
     </section>
 
     <section id="chatScreen" style="display:none;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+        <h3 style="color:var(--primary);" id="currentTopicTitle">Lesson Practice</h3>
+        <button class="btn btn-danger" onclick="finishAndEvaluate()">📊 Finish & Get AI Assessment</button>
+      </div>
+
       <div class="meeting-layout">
         <div class="card" style="padding:10px;background:#111;">
           <div class="video-wrapper">
@@ -87,6 +99,38 @@
         </div>
       </div>
     </section>
+
+    <!-- Modal hiển thị Báo cáo AI Assessment -->
+    <div id="assessmentModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.6); z-index:99999; align-items:center; justify-content:center;">
+      <div style="background:#fff; padding:30px; border-radius:18px; max-width:600px; width:92%; max-height:90vh; overflow-y:auto; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
+        <h2 style="color:var(--primary); text-align:center; margin-bottom:5px;">📊 AI Speaking Assessment</h2>
+        <p style="text-align:center; color:#666; font-size:14px;" id="evalStudentInfo">Student: S001</p>
+        
+        <div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:15px; border-radius:12px; margin:15px 0; text-align:center;">
+          <span style="font-size:0.9rem; color:#1e6b37; font-weight:bold;">QUY CHIẾU KHUNG VSTEP:</span>
+          <div style="font-size:1.6rem; font-weight:800; color:#1e6b37; margin-top:4px;" id="evalVstep">Bậc 2 (A2)</div>
+          <div style="font-size:0.85rem; color:#555; margin-top:2px;">Điểm Overall: <strong id="evalOverall">7.5</strong> / 10</div>
+        </div>
+
+        <div class="score-grid">
+          <div class="score-item"><div class="score-value" id="scoreGrammar">0</div><div class="score-label">Grammar</div></div>
+          <div class="score-item"><div class="score-value" id="scoreVocab">0</div><div class="score-label">Vocabulary</div></div>
+          <div class="score-item"><div class="score-value" id="scorePronun">0</div><div class="score-label">Pronunciation</div></div>
+          <div class="score-item"><div class="score-value" id="scoreFluency">0</div><div class="score-label">Fluency</div></div>
+          <div class="score-item"><div class="score-value" id="scoreInteract">0</div><div class="score-label">Interaction</div></div>
+        </div>
+
+        <div style="margin-top:15px; font-size:14px; line-height:1.6;">
+          <p style="margin-bottom:8px;"><strong>💪 Điểm mạnh (Strengths):</strong> <span id="evalStrengths">...</span></p>
+          <p style="margin-bottom:8px;"><strong>⚠️ Cần cải thiện (Weaknesses):</strong> <span id="evalWeaknesses">...</span></p>
+          <p style="margin-bottom:8px;"><strong>🎯 Bài học tiếp theo (Next Lesson):</strong> <span id="evalNextLesson">...</span></p>
+        </div>
+
+        <div style="text-align:center; margin-top:20px;">
+          <button class="btn" style="width:100%;" onclick="closeAssessmentModal()">Quay lại Danh sách Bài học</button>
+        </div>
+      </div>
+    </div>
 
     <!-- Modal nhập API Key -->
     <div id="apiKeyModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.6); z-index:99999; align-items:center; justify-content:center;">
@@ -121,7 +165,6 @@
     let isListening = false;
     let activeLessonsList = [];
 
-    // Tự động nạp dữ liệu từ Google Sheet khi mở Web
     window.onload = function() {
       fetchAppInitData();
     };
@@ -173,6 +216,10 @@
     async function startLesson(topic, customPrompt) {
       currentTopic = topic;
       currentCustomPrompt = customPrompt;
+      chatHistory = []; // Reset lịch sử hội thoại
+      document.getElementById('chatMessages').innerHTML = '';
+      document.getElementById('currentTopicTitle').innerText = topic;
+
       document.getElementById('dashScreen').style.display = 'none';
       document.getElementById('chatScreen').style.display = 'block';
       
@@ -325,6 +372,61 @@
         removeStatus();
         alert("Connection Error: " + e.message);
       }
+    }
+
+    async function finishAndEvaluate() {
+      if (chatHistory.length < 2) {
+        return alert("Vui lòng thực hành nói ít nhất 1-2 câu trước khi bấm kết thúc nhé!");
+      }
+
+      showStatus("⏳ AI đang phân tích bài nói và chấm điểm VSTEP...");
+
+      try {
+        const response = await fetch(GAS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            action: 'evaluateSession',
+            studentId: currentStudent,
+            topic: currentTopic,
+            chatHistory: chatHistory
+          })
+        });
+
+        const res = await response.json();
+        removeStatus();
+
+        if (res.success) {
+          const ev = res.evaluation;
+          
+          document.getElementById('evalStudentInfo').innerText = `Học sinh: ${currentStudent} | Bài học: ${currentTopic}`;
+          document.getElementById('evalVstep').innerText = ev.vstep;
+          document.getElementById('evalOverall').innerText = ev.overall;
+
+          document.getElementById('scoreGrammar').innerText = ev.grammar;
+          document.getElementById('scoreVocab').innerText = ev.vocabulary;
+          document.getElementById('scorePronun').innerText = ev.pronunciation;
+          document.getElementById('scoreFluency').innerText = ev.fluency;
+          document.getElementById('scoreInteract').innerText = ev.interaction;
+
+          document.getElementById('evalStrengths').innerText = ev.strengths;
+          document.getElementById('evalWeaknesses').innerText = ev.weaknesses;
+          document.getElementById('evalNextLesson').innerText = ev.nextLesson;
+
+          document.getElementById('assessmentModal').style.display = 'flex';
+        } else {
+          alert("Lỗi đánh giá: " + res.error);
+        }
+      } catch (e) {
+        removeStatus();
+        alert("Lỗi kết nối đánh giá: " + e.message);
+      }
+    }
+
+    function closeAssessmentModal() {
+      document.getElementById('assessmentModal').style.display = 'none';
+      document.getElementById('chatScreen').style.display = 'none';
+      document.getElementById('dashScreen').style.display = 'block';
     }
 
     function showStatus(msg) {
