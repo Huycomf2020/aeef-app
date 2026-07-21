@@ -256,20 +256,44 @@
           chatHistory.push({ role: 'user', text: text });
           chatHistory.push({ role: 'model', text: reply });
 
+          // Phát âm với giọng đọc tự nhiên (Natural/Neural Voice)
           const utter = new SpeechSynthesisUtterance(reply);
           utter.lang = 'en-US';
-          utter.rate = 0.9;
+          utter.rate = 0.95; // Tốc độ vừa phải
+          utter.pitch = 1.05; // Giọng hơi tươi sáng hơn
 
-          const voices = window.speechSynthesis.getVoices();
-          const naturalVoice = voices.find(v => v.lang.includes('en') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Jenny')));
-          if (naturalVoice) utter.voice = naturalVoice;
+          // Hàm xử lý chọn giọng tối ưu
+          const setBestVoice = () => {
+            let voices = window.speechSynthesis.getVoices();
+            
+            // Ưu tiên chọn các giọng Natural / Neural / Premium truyền cảm
+            let bestVoice = voices.find(v => v.lang.includes('en') && (
+              v.name.includes('Natural') || 
+              v.name.includes('Google US English') || 
+              v.name.includes('Online (Natural)') ||
+              v.name.includes('Samantha') || 
+              v.name.includes('Jenny')
+            ));
 
-          utter.onend = () => {
-            startListening();
+            if (!bestVoice) {
+              bestVoice = voices.find(v => v.lang === 'en-US' || v.lang === 'en_US');
+            }
+
+            if (bestVoice) utter.voice = bestVoice;
+            
+            utter.onend = () => {
+              startListening(); // AI đọc xong tự động bật Mic cho học sinh nói tiếp
+            };
+
+            window.speechSynthesis.speak(utter);
           };
 
-          window.speechSynthesis.speak(utter);
-        } else if (res.error) {
+          // Bắt sự kiện đảm bảo danh sách giọng đã sẵn sàng trước khi phát
+          if (window.speechSynthesis.getVoices().length !== 0) {
+            setBestVoice();
+          } else {
+            window.speechSynthesis.onvoiceschanged = setBestVoice;
+           } else if (res.error) {
           alert("Lỗi AI: " + res.error);
         }
       } catch (e) {
