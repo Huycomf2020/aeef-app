@@ -38,6 +38,7 @@
 
     .status-indicator { font-size: 0.85rem; font-style: italic; color: #666; margin: 5px 15px; display: flex; align-items: center; gap: 6px; }
     .level-badge { background: #e8f5e9; color: #2e7d32; font-size: 0.75rem; font-weight: bold; padding: 2px 6px; border-radius: 4px; margin-left: 5px; align-self: flex-start; }
+    .unit-tag { font-size: 0.8rem; font-weight: 700; color: #1e6b37; text-transform: uppercase; margin-bottom: 4px; }
   </style>
 </head>
 <body>
@@ -56,23 +57,14 @@
   <main class="main-container">
     <section id="loginScreen" class="card" style="max-width:400px;margin:50px auto;text-align:center;">
       <h2 style="color:var(--primary);margin-bottom:15px;">Welcome</h2>
-      <input type="text" id="studentId" placeholder="Enter Student ID" style="width:100%;padding:12px;border-radius:10px;border:1px solid #ccc;margin-bottom:15px;" />
+      <input type="text" id="studentId" placeholder="Enter Student ID (e.g. S001)" style="width:100%;padding:12px;border-radius:10px;border:1px solid #ccc;margin-bottom:15px;" />
       <button class="btn" style="width:100%;" onclick="login()">Start Practice</button>
     </section>
 
     <section id="dashScreen" style="display:none;">
       <h2 style="color:var(--primary);margin-bottom:20px;">Choose a Lesson</h2>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;">
-        <div class="card">
-          <h3>Travel</h3>
-          <p style="color:#666;font-size:14px;margin:8px 0;">Persona: Tour Guide</p>
-          <button class="btn" onclick="startLesson('Travel (Tour Guide)')">Open</button>
-        </div>
-        <div class="card">
-          <h3>Environment</h3>
-          <p style="color:#666;font-size:14px;margin:8px 0;">Persona: Scientist</p>
-          <button class="btn" onclick="startLesson('Environment (Scientist)')">Open</button>
-        </div>
+      <div id="lessonsGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:15px;">
+        <p style="color:#666;">⏳ Loading lessons from Google Sheets...</p>
       </div>
     </section>
 
@@ -123,9 +115,51 @@
 
     let currentStudent = '';
     let currentTopic = '';
+    let currentCustomPrompt = '';
     let chatHistory = [];
     let recognition = null;
     let isListening = false;
+    let activeLessonsList = [];
+
+    // Tự động nạp dữ liệu từ Google Sheet khi mở Web
+    window.onload = function() {
+      fetchAppInitData();
+    };
+
+    async function fetchAppInitData() {
+      try {
+        const res = await fetch(GAS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action: 'initApp' })
+        });
+        const data = await res.json();
+        if (data.success) {
+          activeLessonsList = data.lessons;
+          renderLessonsGrid(activeLessonsList);
+        }
+      } catch (e) {
+        console.error("Lỗi nạp dữ liệu bài học:", e);
+      }
+    }
+
+    function renderLessonsGrid(lessons) {
+      const grid = document.getElementById('lessonsGrid');
+      if (!lessons || lessons.length === 0) {
+        grid.innerHTML = '<p style="color:#666;">Không có bài học nào khả dụng.</p>';
+        return;
+      }
+
+      grid.innerHTML = lessons.map(lesson => `
+        <div class="card" style="margin-bottom:0;">
+          <div class="unit-tag">${lesson.Unit || 'Lesson'}</div>
+          <h3 style="color:var(--primary);">${lesson.Title}</h3>
+          <p style="color:#555;font-size:14px;margin:6px 0;"><strong>Role:</strong> ${lesson.Role}</p>
+          <p style="color:#888;font-size:13px;margin-bottom:12px;">Difficulty: ${lesson.Difficulty || '★★☆'}</p>
+          <button class="btn" style="width:100%;padding:10px 20px;" onclick="startLesson('${lesson.Title} (${lesson.Role})', '${(lesson.Prompt || '').replace(/'/g, "\\'")}')">Open Lesson</button>
+        </div>
+      `).join('');
+    }
 
     function login() {
       const val = document.getElementById('studentId').value.trim();
@@ -136,8 +170,9 @@
       document.getElementById('dashScreen').style.display = 'block';
     }
 
-    async function startLesson(topic) {
+    async function startLesson(topic, customPrompt) {
       currentTopic = topic;
+      currentCustomPrompt = customPrompt;
       document.getElementById('dashScreen').style.display = 'none';
       document.getElementById('chatScreen').style.display = 'block';
       
@@ -255,7 +290,8 @@
             studentId: currentStudent,
             topic: currentTopic,
             userMessage: text,
-            chatHistory: chatHistory
+            chatHistory: chatHistory,
+            systemPrompt: currentCustomPrompt
           })
         });
 
@@ -317,8 +353,29 @@
     function appendBubble(sender, text) {
       const container = document.getElementById('chatMessages');
       const div = document.createElement('div');
-      div.className = `chat-bubble ${sender}-bubble`;
-      div.innerText = text;
+      
+      if (sender === 'user') {
+        div.className = 'chat-bubble user-bubble';
+        div.innerText = text;
+      } else {
+        div.className = 'chat-bubble ai-bubble';
+        div.style.display = 'flex';
+        div.style.gap = '10px';
+        div.style.alignItems = 'flex-start';
+
+        let avatarIcon = '👨‍💼';
+
+        div.innerHTML = `
+          <span style="font-size: 1.4rem; line-height: 1;">${avatarIcon}</span>
+          <div style="flex: 1;">
+            <div>${text}</div>
+            <button onclick="speakText('${text.replace(/'/g, "\\'")}')" style="background: none; border: none; cursor: pointer; font-size: 0.9rem; margin-top: 6px; color: #1e6b37; padding: 0; display: flex; align-items: center; gap: 4px;">
+              🔊 <span style="font-size: 0.75rem; text-decoration: underline;">Nghe lại</span>
+            </button>
+          </div>
+        `;
+      }
+
       container.appendChild(div);
       container.scrollTop = container.scrollHeight;
     }
