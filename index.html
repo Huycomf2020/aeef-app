@@ -36,7 +36,6 @@
     .mic-btn.recording { background: #dc3545; animation: pulse 1s infinite; }
     @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(220,53,69,0.4); } 70% { box-shadow: 0 0 0 10px rgba(220,53,69,0); } }
 
-    /* Indicator & Badge CSS */
     .status-indicator { font-size: 0.85rem; font-style: italic; color: #666; margin: 5px 15px; display: flex; align-items: center; gap: 6px; }
     .level-badge { background: #e8f5e9; color: #2e7d32; font-size: 0.75rem; font-weight: bold; padding: 2px 6px; border-radius: 4px; margin-left: 5px; align-self: flex-start; }
   </style>
@@ -97,7 +96,7 @@
       </div>
     </section>
 
-    <!-- Modal nhập API Key duy nhất -->
+    <!-- Modal nhập API Key -->
     <div id="apiKeyModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.6); z-index:99999; align-items:center; justify-content:center;">
       <div style="background:#fff; padding:30px; border-radius:18px; max-width:420px; width:90%; box-shadow:0 10px 25px rgba(0,0,0,0.2); text-align:center;">
         <h3 style="margin-bottom:12px; color:#1e6b37;">Kích hoạt Gemini API Key 🔑</h3>
@@ -148,8 +147,33 @@
         const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         document.getElementById('userVideo').srcObject = stream;
       } catch (err) {
-        alert("Camera Permission: Please click Allow on browser popup.");
+        console.warn("Camera/Microphone Permission denied or unavailable:", err);
       }
+    }
+
+    function speakText(text) {
+      if (!('speechSynthesis' in window)) return;
+      
+      window.speechSynthesis.cancel(); // Dừng câu cũ nếu có
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = 'en-US';
+      utter.rate = 0.95;
+
+      const voices = window.speechSynthesis.getVoices();
+      const bestVoice = voices.find(v => v.lang.includes('en') && (
+        v.name.includes('Natural') || 
+        v.name.includes('Google US English') || 
+        v.name.includes('Samantha') || 
+        v.name.includes('Jenny')
+      ));
+
+      if (bestVoice) utter.voice = bestVoice;
+
+      utter.onend = () => {
+        startListening();
+      };
+
+      window.speechSynthesis.speak(utter);
     }
 
     function toggleMic() {
@@ -211,70 +235,138 @@
 
       try { recognition.start(); } catch(err){}
     }
-   }
-async function sendMsg() {
-  const input = document.getElementById('chatInput');
-  const text = input.value.trim();
-  if (!text) return;
 
-  appendBubble('user', text);
-  input.value = '';
+    async function sendMsg() {
+      const input = document.getElementById('chatInput');
+      const text = input.value.trim();
+      if (!text) return;
 
-  showStatus("🤔 AI is thinking...");
+      appendBubble('user', text);
+      input.value = '';
 
-  try {
-    const response = await fetch(GAS_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({
-        action: 'chat',
-        studentId: currentStudent,
-        topic: currentTopic,
-        userMessage: text,
-        chatHistory: chatHistory
-      })
-    });
+      showStatus("🤔 AI is thinking...");
 
-    const res = await response.json();
-    removeStatus();
+      try {
+        const response = await fetch(GAS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            action: 'chat',
+            studentId: currentStudent,
+            topic: currentTopic,
+            userMessage: text,
+            chatHistory: chatHistory
+          })
+        });
 
-    if (res.needApiKey) {
-      openKeyModal();
-      return;
+        const res = await response.json();
+        removeStatus();
+
+        if (res.needApiKey) {
+          openKeyModal();
+          return;
+        }
+
+        if (res.success) {
+          const data = res.data;
+
+          if (data.level) appendLevelBadge(data.level);
+          if (data.recast) appendRecast("💡 Sửa ngữ pháp: " + data.recast);
+          if (data.pronunciationNote) appendRecast("🗣️ Mẹo phát âm: " + data.pronunciationNote);
+
+          const reply = (data.praise ? data.praise + " " : "") + data.reply;
+          appendBubble('ai', reply);
+
+          chatHistory.push({ role: 'user', text: text });
+          chatHistory.push({ role: 'model', text: reply });
+
+          // Phát âm an toàn bằng SpeechSynthesis
+          speakText(reply);
+
+        } else if (res.error) {
+          alert("Lỗi AI: " + res.error);
+        }
+      } catch (e) {
+        removeStatus();
+        alert("Connection Error: " + e.message);
+      }
     }
 
-    if (res.success) {
-      const data = res.data;
-
-      if (data.level) appendLevelBadge(data.level);
-      if (data.recast) appendRecast("💡 Sửa ngữ pháp: " + data.recast);
-      if (data.pronunciationNote) appendRecast("🗣️ Mẹo phát âm: " + data.pronunciationNote);
-
-      const reply = (data.praise ? data.praise + " " : "") + data.reply;
-      appendBubble('ai', reply);
-
-      chatHistory.push({ role: 'user', text: text });
-      chatHistory.push({ role: 'model', text: reply });
-
-      // Phát âm giọng Google TTS tự nhiên chuẩn Mỹ
-      const audioUrl = "https://translate.google.com/translate_tts?ie=UTF-8&tl=en-US&client=tw-ob&q=" + encodeURIComponent(reply);
-      const audio = new Audio(audioUrl);
-      
-      audio.play().catch(e => console.log("Audio playback error:", e));
-
-      // Khi AI nói xong -> Tự động bật Mic cho học sinh trả lời tiếp
-      audio.onended = () => {
-        startListening(); 
-      };
-
-    } else if (res.error) {
-      alert("Lỗi AI: " + res.error);
+    function showStatus(msg) {
+      removeStatus();
+      const chatMessages = document.getElementById('chatMessages');
+      const div = document.createElement('div');
+      div.id = 'statusIndicator';
+      div.className = 'status-indicator';
+      div.innerText = msg;
+      chatMessages.appendChild(div);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
     }
-  } catch (e) {
-    removeStatus();
-    alert("Connection Error: " + e.message);
-  }
-}
+
+    function removeStatus() {
+      const el = document.getElementById('statusIndicator');
+      if (el) el.remove();
+    }
+
+    function appendLevelBadge(level) {
+      const chatMessages = document.getElementById('chatMessages');
+      const div = document.createElement('div');
+      div.innerHTML = `<span class="level-badge">Trình độ ghi nhận: CEFR ${level}</span>`;
+      chatMessages.appendChild(div);
+    }
+
+    function appendBubble(sender, text) {
+      const container = document.getElementById('chatMessages');
+      const div = document.createElement('div');
+      div.className = `chat-bubble ${sender}-bubble`;
+      div.innerText = text;
+      container.appendChild(div);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function appendRecast(text) {
+      const container = document.getElementById('chatMessages');
+      const div = document.createElement('div');
+      div.className = 'recast-box';
+      div.innerText = text;
+      container.appendChild(div);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function openKeyModal() {
+      document.getElementById('apiKeyModal').style.display = 'flex';
+    }
+
+    function closeKeyModal() {
+      document.getElementById('apiKeyModal').style.display = 'none';
+    }
+
+    async function saveApiKey() {
+      const key = document.getElementById('apiKeyInput').value.trim();
+      if (!key) return alert("Vui lòng dán mã API Key!");
+
+      try {
+        const response = await fetch(GAS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            action: 'saveApiKey',
+            apiKey: key
+          })
+        });
+
+        const res = await response.json();
+        if (res.success) {
+          alert("Đã cập nhật API Key mới thành công!");
+          document.getElementById('apiKeyInput').value = '';
+          closeKeyModal();
+        } else {
+          alert("Lỗi: " + res.error);
+        }
+      } catch (e) {
+        alert("Không thể lưu Key: " + e.message);
+      }
+    }
   </script>
 </body>
 </html>
