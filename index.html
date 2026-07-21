@@ -211,150 +211,69 @@
 
       try { recognition.start(); } catch(err){}
     }
+async function sendMsg() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text) return;
 
-    async function sendMsg() {
-      const input = document.getElementById('chatInput');
-      const text = input.value.trim();
-      if (!text) return;
+  appendBubble('user', text);
+  input.value = '';
 
-      appendBubble('user', text);
-      input.value = '';
+  showStatus("🤔 AI is thinking...");
 
-      showStatus("🤔 AI is thinking...");
+  try {
+    const response = await fetch(GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({
+        action: 'chat',
+        studentId: currentStudent,
+        topic: currentTopic,
+        userMessage: text,
+        chatHistory: chatHistory
+      })
+    });
 
-      try {
-        const response = await fetch(GAS_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({
-            action: 'chat',
-            studentId: currentStudent,
-            topic: currentTopic,
-            userMessage: text,
-            chatHistory: chatHistory
-          })
-        });
+    const res = await response.json();
+    removeStatus();
 
-        const res = await response.json();
-        removeStatus();
-
-        if (res.needApiKey) {
-          openKeyModal();
-          return;
-        }
-
-        if (res.success) {
-          const data = res.data;
-
-          if (data.level) appendLevelBadge(data.level);
-          if (data.recast) appendRecast("💡 Sửa ngữ pháp: " + data.recast);
-          if (data.pronunciationNote) appendRecast("🗣️ Mẹo phát âm: " + data.pronunciationNote);
-
-          const reply = (data.praise ? data.praise + " " : "") + data.reply;
-          appendBubble('ai', reply);
-
-          chatHistory.push({ role: 'user', text: text });
-          chatHistory.push({ role: 'model', text: reply });
-
-         // Phát âm giọng Google TTS mượt mà, tự nhiên chuẩn Mỹ
-          const audioUrl = "https://translate.google.com/translate_tts?ie=UTF-8&tl=en-US&client=tw-ob&q=" + encodeURIComponent(reply);
-          const audio = new Audio(audioUrl);
-          
-          audio.play().catch(e => console.log("Lỗi phát audio:", e));
-
-          // Khi AI nói xong -> Tự động bật Mic cho học sinh trả lời tiếp
-          audio.onended = () => {
-            startListening(); 
-          };
-          // Bắt sự kiện đảm bảo danh sách giọng đã sẵn sàng trước khi phát
-          if (window.speechSynthesis.getVoices().length !== 0) {
-            setBestVoice();
-          } else {
-            window.speechSynthesis.onvoiceschanged = setBestVoice;
-           } else if (res.error) {
-          alert("Lỗi AI: " + res.error);
-        }
-      } catch (e) {
-        removeStatus();
-        alert("Connection Error: " + e.message);
-      }
+    if (res.needApiKey) {
+      openKeyModal();
+      return;
     }
 
-    function showStatus(msg) {
-      removeStatus();
-      const chatMessages = document.getElementById('chatMessages');
-      const div = document.createElement('div');
-      div.id = 'statusIndicator';
-      div.className = 'status-indicator';
-      div.innerText = msg;
-      chatMessages.appendChild(div);
-      chatMessages.scrollTop = chatMessages.scrollHeight;
+    if (res.success) {
+      const data = res.data;
+
+      if (data.level) appendLevelBadge(data.level);
+      if (data.recast) appendRecast("💡 Sửa ngữ pháp: " + data.recast);
+      if (data.pronunciationNote) appendRecast("🗣️ Mẹo phát âm: " + data.pronunciationNote);
+
+      const reply = (data.praise ? data.praise + " " : "") + data.reply;
+      appendBubble('ai', reply);
+
+      chatHistory.push({ role: 'user', text: text });
+      chatHistory.push({ role: 'model', text: reply });
+
+      // Phát âm giọng Google TTS tự nhiên chuẩn Mỹ
+      const audioUrl = "https://translate.google.com/translate_tts?ie=UTF-8&tl=en-US&client=tw-ob&q=" + encodeURIComponent(reply);
+      const audio = new Audio(audioUrl);
+      
+      audio.play().catch(e => console.log("Audio playback error:", e));
+
+      // Khi AI nói xong -> Tự động bật Mic cho học sinh trả lời tiếp
+      audio.onended = () => {
+        startListening(); 
+      };
+
+    } else if (res.error) {
+      alert("Lỗi AI: " + res.error);
     }
-
-    function removeStatus() {
-      const el = document.getElementById('statusIndicator');
-      if (el) el.remove();
-    }
-
-    function appendLevelBadge(level) {
-      const chatMessages = document.getElementById('chatMessages');
-      const div = document.createElement('div');
-      div.innerHTML = `<span class="level-badge">Trình độ ghi nhận: CEFR ${level}</span>`;
-      chatMessages.appendChild(div);
-    }
-
-    function appendBubble(sender, text) {
-      const container = document.getElementById('chatMessages');
-      const div = document.createElement('div');
-      div.className = `chat-bubble ${sender}-bubble`;
-      div.innerText = text;
-      container.appendChild(div);
-      container.scrollTop = container.scrollHeight;
-    }
-
-    function appendRecast(text) {
-      const container = document.getElementById('chatMessages');
-      const div = document.createElement('div');
-      div.className = 'recast-box';
-      div.innerText = text;
-      container.appendChild(div);
-      container.scrollTop = container.scrollHeight;
-    }
-
-    function openKeyModal() {
-      document.getElementById('apiKeyModal').style.display = 'flex';
-    }
-
-    function closeKeyModal() {
-      document.getElementById('apiKeyModal').style.display = 'none';
-    }
-
-    async function saveApiKey() {
-      const key = document.getElementById('apiKeyInput').value.trim();
-      if (!key) return alert("Vui lòng dán mã API Key!");
-
-      try {
-        const response = await fetch(GAS_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({
-            action: 'saveApiKey',
-            apiKey: key
-          })
-        });
-
-        const res = await response.json();
-        if (res.success) {
-          alert("Đã cập nhật API Key mới thành công!");
-          document.getElementById('apiKeyInput').value = '';
-          closeKeyModal();
-        } else {
-          alert("Lỗi: " + res.error);
-        }
-      } catch (e) {
-        alert("Không thể lưu Key: " + e.message);
-      }
-    }
+  } catch (e) {
+    removeStatus();
+    alert("Connection Error: " + e.message);
+  }
+}
   </script>
 </body>
 </html>
