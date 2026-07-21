@@ -256,38 +256,16 @@
           chatHistory.push({ role: 'user', text: text });
           chatHistory.push({ role: 'model', text: reply });
 
-          // Phát âm với giọng đọc tự nhiên (Natural/Neural Voice)
-          const utter = new SpeechSynthesisUtterance(reply);
-          utter.lang = 'en-US';
-          utter.rate = 0.95; // Tốc độ vừa phải
-          utter.pitch = 1.05; // Giọng hơi tươi sáng hơn
+         // Phát âm giọng Google TTS mượt mà, tự nhiên chuẩn Mỹ
+          const audioUrl = "https://translate.google.com/translate_tts?ie=UTF-8&tl=en-US&client=tw-ob&q=" + encodeURIComponent(reply);
+          const audio = new Audio(audioUrl);
+          
+          audio.play().catch(e => console.log("Lỗi phát audio:", e));
 
-          // Hàm xử lý chọn giọng tối ưu
-          const setBestVoice = () => {
-            let voices = window.speechSynthesis.getVoices();
-            
-            // Ưu tiên chọn các giọng Natural / Neural / Premium truyền cảm
-            let bestVoice = voices.find(v => v.lang.includes('en') && (
-              v.name.includes('Natural') || 
-              v.name.includes('Google US English') || 
-              v.name.includes('Online (Natural)') ||
-              v.name.includes('Samantha') || 
-              v.name.includes('Jenny')
-            ));
-
-            if (!bestVoice) {
-              bestVoice = voices.find(v => v.lang === 'en-US' || v.lang === 'en_US');
-            }
-
-            if (bestVoice) utter.voice = bestVoice;
-            
-            utter.onend = () => {
-              startListening(); // AI đọc xong tự động bật Mic cho học sinh nói tiếp
-            };
-
-            window.speechSynthesis.speak(utter);
+          // Khi AI nói xong -> Tự động bật Mic cho học sinh trả lời tiếp
+          audio.onended = () => {
+            startListening(); 
           };
-
           // Bắt sự kiện đảm bảo danh sách giọng đã sẵn sàng trước khi phát
           if (window.speechSynthesis.getVoices().length !== 0) {
             setBestVoice();
