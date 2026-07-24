@@ -12,10 +12,11 @@
     
     .app-header { background: #fff; padding: 16px 40px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.03); }
     .logo { width: 40px; height: 40px; background: var(--primary); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 20px; }
-    .main-container { max-width: 1000px; margin: 30px auto; padding: 0 20px; }
+    .main-container { max-width: 1050px; margin: 30px auto; padding: 0 20px; }
     .card { background: var(--card); border-radius: 18px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); margin-bottom: 25px; }
     .btn { padding: 12px 24px; border: none; border-radius: 30px; background: var(--primary); color: #fff; font-weight: 600; cursor: pointer; }
     .btn-danger { background: #dc3545; color: #fff; }
+    .btn-outline { background: transparent; border: 2px solid var(--primary); color: var(--primary); }
     
     .meeting-layout { display: grid; grid-template-columns: 300px 1fr; gap: 20px; }
     @media (max-width: 768px) { .meeting-layout { grid-template-columns: 1fr; } }
@@ -46,6 +47,18 @@
     .score-item { background: #f8f9fa; padding: 12px; border-radius: 10px; text-align: center; border: 1px solid #e9ecef; }
     .score-value { font-size: 1.4rem; font-weight: 700; color: var(--primary); }
     .score-label { font-size: 0.75rem; color: #666; text-transform: uppercase; }
+
+    /* Teacher Dashboard Styles */
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 25px; }
+    .kpi-card { background: #fff; border-radius: 14px; padding: 18px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid #e2e8f0; text-align: center; }
+    .kpi-val { font-size: 1.8rem; font-weight: 800; color: var(--primary); margin: 6px 0; }
+    .kpi-lbl { font-size: 0.8rem; color: #64748b; font-weight: 600; text-transform: uppercase; }
+
+    .table-container { overflow-x: auto; margin-top: 15px; }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
+    th { background: #f1f5f9; color: #334155; padding: 12px; font-weight: 700; border-bottom: 2px solid #e2e8f0; }
+    td { padding: 12px; border-bottom: 1px solid #e2e8f0; color: #475569; }
+    tr:hover { background: #f8fafc; }
   </style>
 </head>
 <body>
@@ -55,19 +68,22 @@
       <div class="logo">A</div>
       <h1 style="color:var(--primary);font-size:20px;">AEEF Classroom</h1>
     </div>
-    <div style="display:flex; align-items:center; gap:15px;">
+    <div style="display:flex; align-items:center; gap:12px;">
+      <button class="btn btn-outline" id="btnTeacherToggle" onclick="toggleTeacherDashboard()" style="padding: 6px 14px; font-size: 0.85rem; border-radius:6px;">👨‍🏫 Teacher Dashboard</button>
       <div style="font-weight:600;">👤 <span id="studentDisplay">Guest</span></div>
       <button class="btn" onclick="openKeyModal()" style="padding: 6px 12px; font-size: 0.85rem; background:#2e7d32; color:#fff; border:none; border-radius:6px; cursor:pointer;">🔑 Đổi API Key</button>
     </div>
   </header>
 
   <main class="main-container">
+    <!-- Màn hình Đăng nhập Học sinh -->
     <section id="loginScreen" class="card" style="max-width:400px;margin:50px auto;text-align:center;">
       <h2 style="color:var(--primary);margin-bottom:15px;">Welcome</h2>
       <input type="text" id="studentId" placeholder="Enter Student ID (e.g. S001)" style="width:100%;padding:12px;border-radius:10px;border:1px solid #ccc;margin-bottom:15px;" />
       <button class="btn" style="width:100%;" onclick="login()">Start Practice</button>
     </section>
 
+    <!-- Màn hình Chọn Bài học (Học sinh) -->
     <section id="dashScreen" style="display:none;">
       <h2 style="color:var(--primary);margin-bottom:20px;">Choose a Lesson</h2>
       <div id="lessonsGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:15px;">
@@ -75,6 +91,7 @@
       </div>
     </section>
 
+    <!-- Màn hình Phòng học Chat / Speaking -->
     <section id="chatScreen" style="display:none;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
         <h3 style="color:var(--primary);" id="currentTopicTitle">Lesson Practice</h3>
@@ -96,6 +113,67 @@
             <input type="text" id="chatInput" placeholder="Type or speak English..." onkeypress="if(event.key==='Enter') sendMsg()" />
             <button class="btn" onclick="sendMsg()">Send</button>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Màn hình TEACHER DASHBOARD (Bảng điều khiển Giáo viên) -->
+    <section id="teacherScreen" style="display:none;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <div>
+          <h2 style="color:var(--primary);">👨‍🏫 Teacher Analytics Dashboard</h2>
+          <p style="font-size:14px; color:#666;">Thống kê thời lượng luyện nói, tần suất tương tác & báo cáo VSTEP thực tế</p>
+        </div>
+        <button class="btn" style="background:#0284c7;" onclick="exportScoresToCSV()">📥 Xuất Báo Cáo Excel/CSV</button>
+      </div>
+
+      <!-- Thẻ KPI Thống kê -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-lbl">⏱️ Speaking Time</div>
+          <div class="kpi-val" id="kpiSpeakingTime">0 mins</div>
+          <span style="font-size:12px; color:#16a34a;">Ước tính từ câu thoại</span>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-lbl">💬 Number of Turns</div>
+          <div class="kpi-val" id="kpiTurns">0</div>
+          <span style="font-size:12px; color:#64748b;">Tổng lượt tương tác</span>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-lbl">🎯 Overall Accuracy</div>
+          <div class="kpi-val" id="kpiAccuracy">0.0</div>
+          <span style="font-size:12px; color:#16a34a;">Điểm trung bình lớp</span>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-lbl">🏆 VSTEP Level</div>
+          <div class="kpi-val" id="kpiVstepPop" style="font-size:1.4rem;">Bậc 2 (A2)</div>
+          <span style="font-size:12px; color:#64748b;">Bậc phổ biến nhất</span>
+        </div>
+      </div>
+
+      <!-- Bảng Báo cáo tiến bộ từng Học sinh -->
+      <div class="card">
+        <h3 style="color:var(--primary); margin-bottom:15px;">📋 Student Performance Summary</h3>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>StudentID</th>
+                <th>Tần suất nói</th>
+                <th>Pronunciation</th>
+                <th>Grammar</th>
+                <th>Vocab</th>
+                <th>Fluency</th>
+                <th>Interaction</th>
+                <th>Overall</th>
+                <th>VSTEP</th>
+                <th>Ngày gần nhất</th>
+              </tr>
+            </thead>
+            <tbody id="teacherTableBody">
+              <tr><td colspan="10" style="text-align:center; color:#888;">⏳ Đang tải dữ liệu báo cáo...</td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </section>
@@ -164,6 +242,8 @@
     let recognition = null;
     let isListening = false;
     let activeLessonsList = [];
+    let isTeacherView = false;
+    let rawScoresData = [];
 
     window.onload = function() {
       fetchAppInitData();
@@ -216,7 +296,7 @@
     async function startLesson(topic, customPrompt) {
       currentTopic = topic;
       currentCustomPrompt = customPrompt;
-      chatHistory = []; // Reset lịch sử hội thoại
+      chatHistory = [];
       document.getElementById('chatMessages').innerHTML = '';
       document.getElementById('currentTopicTitle').innerText = topic;
 
@@ -429,6 +509,133 @@
       document.getElementById('dashScreen').style.display = 'block';
     }
 
+    /* ----------- TEACHER DASHBOARD LOGIC ----------- */
+    async function toggleTeacherDashboard() {
+      isTeacherView = !isTeacherView;
+      const btn = document.getElementById('btnTeacherToggle');
+
+      if (isTeacherView) {
+        btn.innerText = '👨‍🎓 Student View';
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('dashScreen').style.display = 'none';
+        document.getElementById('chatScreen').style.display = 'none';
+        document.getElementById('teacherScreen').style.display = 'block';
+
+        fetchTeacherAnalytics();
+      } else {
+        btn.innerText = '👨‍🏫 Teacher Dashboard';
+        document.getElementById('teacherScreen').style.display = 'none';
+        document.getElementById('dashScreen').style.display = currentStudent ? 'block' : 'none';
+        if (!currentStudent) document.getElementById('loginScreen').style.display = 'block';
+      }
+    }
+
+    async function fetchTeacherAnalytics() {
+      try {
+        const res = await fetch(GAS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action: 'getTeacherDashboard' })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          rawScoresData = data.scores || [];
+          const responsesCount = data.responsesCount || 0;
+
+          // Tính toán KPI
+          const turns = responsesCount;
+          const estimatedSpeakingMins = Math.round((turns * 18) / 60); // Trung bình 18 giây/câu
+          document.getElementById('kpiSpeakingTime').innerText = estimatedSpeakingMins + ' mins';
+          document.getElementById('kpiTurns').innerText = turns;
+
+          if (rawScoresData.length > 0) {
+            const sumOverall = rawScoresData.reduce((acc, curr) => acc + (Number(curr.Overall) || 0), 0);
+            const avgOverall = (sumOverall / rawScoresData.length).toFixed(1);
+            document.getElementById('kpiAccuracy').innerText = avgOverall + ' / 10';
+
+            // Lấy bậc VSTEP phổ biến nhất
+            const vstepCounts = {};
+            rawScoresData.forEach(s => {
+              const v = s.VSTEP || 'Bậc 2 (A2)';
+              vstepCounts[v] = (vstepCounts[v] || 0) + 1;
+            });
+            let popVstep = 'Bậc 2 (A2)';
+            let maxC = 0;
+            for (let k in vstepCounts) {
+              if (vstepCounts[k] > maxC) {
+                maxC = vstepCounts[k];
+                popVstep = k;
+              }
+            }
+            document.getElementById('kpiVstepPop').innerText = popVstep;
+          }
+
+          renderTeacherTable(rawScoresData);
+        }
+      } catch (e) {
+        console.error("Lỗi nạp Dashboard:", e);
+      }
+    }
+
+    function renderTeacherTable(scores) {
+      const tbody = document.getElementById('teacherTableBody');
+      if (!scores || scores.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:#888;">Chưa có dữ liệu bài nói nào.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = scores.map(row => `
+        <tr>
+          <td><strong>${row.StudentID || 'N/A'}</strong></td>
+          <td>${row.LessonID || 'Practice'}</td>
+          <td>${row.Pronunciation || 0}</td>
+          <td>${row.Grammar || 0}</td>
+          <td>${row.Vocabulary || 0}</td>
+          <td>${row.Fluency || 0}</td>
+          <td>${row.Interaction || 0}</td>
+          <td><strong style="color:var(--primary);">${row.Overall || 0}</strong></td>
+          <td><span class="level-badge">${row.VSTEP || 'N/A'}</span></td>
+          <td style="font-size:12px; color:#888;">${row.Timestamp || ''}</td>
+        </tr>
+      `).join('');
+    }
+
+    function exportScoresToCSV() {
+      if (!rawScoresData || rawScoresData.length === 0) return alert("Không có dữ liệu để xuất!");
+
+      let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+      csvContent += "StudentID,LessonID,Pronunciation,Grammar,Vocabulary,Fluency,Interaction,Overall,VSTEP,Strengths,Weaknesses,NextLesson,Timestamp\n";
+
+      rawScoresData.forEach(r => {
+        let row = [
+          `"${r.StudentID || ''}"`,
+          `"${r.LessonID || ''}"`,
+          r.Pronunciation || 0,
+          r.Grammar || 0,
+          r.Vocabulary || 0,
+          r.Fluency || 0,
+          r.Interaction || 0,
+          r.Overall || 0,
+          `"${r.VSTEP || ''}"`,
+          `"${(r.Strengths || '').replace(/"/g, '""')}"`,
+          `"${(r.Weaknesses || '').replace(/"/g, '""')}"`,
+          `"${(r.NextLesson || '').replace(/"/g, '""')}"`,
+          `"${r.Timestamp || ''}"`
+        ];
+        csvContent += row.join(",") + "\n";
+      });
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `AEEF_Speaking_Report_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    /* ----------- HELPER FUNCTIONS ----------- */
     function showStatus(msg) {
       removeStatus();
       const chatMessages = document.getElementById('chatMessages');
