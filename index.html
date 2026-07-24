@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AEEF - AI English Speaking Companion</title>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Thư viện html2pdf.js để xuất file PDF đẹp mắt -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
   <style>
     :root { --primary: #1e6b37; --bg: #f4f7f6; --card: #ffffff; --text: #2c3e50; }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
@@ -19,6 +22,7 @@
     .btn { padding: 12px 24px; border: none; border-radius: 30px; background: var(--primary); color: #fff; font-weight: 600; cursor: pointer; }
     .btn-danger { background: #dc3545; color: #fff; }
     .btn-outline { background: transparent; border: 2px solid var(--primary); color: var(--primary); }
+    .btn-sm { padding: 6px 12px; font-size: 0.8rem; border-radius: 8px; }
     
     .meeting-layout { display: grid; grid-template-columns: 300px 1fr; gap: 20px; }
     @media (max-width: 768px) { .meeting-layout { grid-template-columns: 1fr; } }
@@ -44,6 +48,11 @@
     .level-badge { background: #e8f5e9; color: #2e7d32; font-size: 0.75rem; font-weight: bold; padding: 2px 6px; border-radius: 4px; margin-left: 5px; align-self: flex-start; }
     .unit-tag { font-size: 0.8rem; font-weight: 700; color: #1e6b37; text-transform: uppercase; margin-bottom: 4px; }
 
+    /* Leaderboard Styles */
+    .leaderboard-card { background: linear-gradient(135deg, #1e6b37 0%, #114b23 100%); color: #fff; border-radius: 18px; padding: 20px; margin-bottom: 25px; }
+    .lb-item { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.15); padding: 10px 16px; border-radius: 12px; margin-top: 8px; }
+    .lb-rank { font-weight: 800; font-size: 1.1rem; width: 35px; }
+
     /* Score Modal Grid */
     .score-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin: 15px 0; }
     .score-item { background: #f8f9fa; padding: 12px; border-radius: 10px; text-align: center; border: 1px solid #e9ecef; }
@@ -62,16 +71,16 @@
     td { padding: 12px; border-bottom: 1px solid #e2e8f0; color: #475569; }
     tr:hover { background: #f8fafc; }
 
-    /* Footer Style */
     .app-footer { text-align: center; padding: 18px; background: #fff; border-top: 1px solid #e2e8f0; font-size: 0.9rem; color: #64748b; margin-top: auto; }
     .app-footer a { color: var(--primary); font-weight: 700; text-decoration: none; }
-    .app-footer a:hover { text-decoration: underline; }
+    
+    /* PDF Template hidden styling */
+    #pdfReportTemplate { display: none; background: #fff; padding: 30px; font-family: 'Plus Jakarta Sans', sans-serif; color: #2c3e50; }
   </style>
 </head>
 <body>
 
   <header class="app-header">
-    <!-- Home Link: Click logo hoặc tên để về Home -->
     <div class="brand-logo" onclick="goHome()" title="Quay về trang chủ">
       <div class="logo">A</div>
       <h1 style="color:var(--primary);font-size:20px;">AEEF Classroom</h1>
@@ -91,8 +100,16 @@
       <button class="btn" style="width:100%;" onclick="login()">Start Practice</button>
     </section>
 
-    <!-- Màn hình Chọn Bài học (Học sinh) -->
+    <!-- Màn hình Chọn Bài học & Bảng Xếp Hạng (Học sinh) -->
     <section id="dashScreen" style="display:none;">
+      <!-- BẢNG XẾP HẠNG LEADERBOARD -->
+      <div class="leaderboard-card">
+        <h3 style="margin-bottom:12px; display:flex; align-items:center; gap:8px;">🏆 LEADERBOARD - TOP HỌC SINH CHĂM CHỈ</h3>
+        <div id="leaderboardList">
+          <p style="font-size:13px; opacity:0.8;">⏳ Đang cập nhật thứ hạng...</p>
+        </div>
+      </div>
+
       <h2 style="color:var(--primary);margin-bottom:20px;">Choose a Lesson</h2>
       <div id="lessonsGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:15px;">
         <p style="color:#666;">⏳ Loading lessons from Google Sheets...</p>
@@ -125,7 +142,7 @@
       </div>
     </section>
 
-    <!-- Màn hình TEACHER DASHBOARD (Bảng điều khiển Giáo viên) -->
+    <!-- Màn hình TEACHER DASHBOARD -->
     <section id="teacherScreen" style="display:none;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
         <div>
@@ -135,7 +152,6 @@
         <button class="btn" style="background:#0284c7;" onclick="exportScoresToCSV()">📥 Xuất Báo Cáo Excel/CSV</button>
       </div>
 
-      <!-- Thẻ KPI Thống kê -->
       <div class="kpi-grid">
         <div class="kpi-card">
           <div class="kpi-lbl">⏱️ Speaking Time</div>
@@ -159,7 +175,6 @@
         </div>
       </div>
 
-      <!-- Bảng Báo cáo tiến bộ từng Học sinh -->
       <div class="card">
         <h3 style="color:var(--primary); margin-bottom:15px;">📋 Student Performance Summary</h3>
         <div class="table-container">
@@ -167,15 +182,15 @@
             <thead>
               <tr>
                 <th>StudentID</th>
-                <th>Tần suất nói</th>
-                <th>Pronunciation</th>
+                <th>Bài học</th>
+                <th>Pronun</th>
                 <th>Grammar</th>
                 <th>Vocab</th>
                 <th>Fluency</th>
-                <th>Interaction</th>
                 <th>Overall</th>
                 <th>VSTEP</th>
-                <th>Ngày gần nhất</th>
+                <th>Ngày</th>
+                <th>Hành động</th>
               </tr>
             </thead>
             <tbody id="teacherTableBody">
@@ -238,9 +253,74 @@
         </div>
       </div>
     </div>
+
+    <!-- KHUNG IN MẪU PHIẾU BÁO CÁO PDF (ẨN NỀN) -->
+    <div id="pdfPrintContainer" style="position:absolute; left:-9999px; top:-9999px;">
+      <div id="pdfContent" style="width:700px; padding:35px; background:#fff; font-family:'Plus Jakarta Sans', sans-serif; border:2px solid #1e6b37; border-radius:12px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #1e6b37; padding-bottom:15px; margin-bottom:20px;">
+          <div>
+            <h1 style="color:#1e6b37; font-size:22px; text-transform:uppercase;">TRUNG TÂM NGOẠI NGỮ APLUS</h1>
+            <p style="font-size:12px; color:#555;">PHIẾU BÁO CÁO KẾT QUẢ LUYỆN NÓI TIẾNG ANH AI (AEEF)</p>
+          </div>
+          <div style="text-align:right;">
+            <p style="font-size:12px; font-weight:bold; color:#1e6b37;" id="pdfDate">Ngày: --/--/----</p>
+            <p style="font-size:11px; color:#777;">Hệ thống AI Assessment</p>
+          </div>
+        </div>
+
+        <div style="background:#f8fafc; padding:15px; border-radius:8px; margin-bottom:20px;">
+          <p style="font-size:14px; margin-bottom:5px;"><strong>Mã Học Sinh (StudentID):</strong> <span id="pdfStudentId" style="color:#1e6b37; font-weight:bold;">S001</span></p>
+          <p style="font-size:14px;"><strong>Bài luyện tập (Lesson):</strong> <span id="pdfLesson">Travel</span></p>
+        </div>
+
+        <div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:15px; border-radius:10px; text-align:center; margin-bottom:20px;">
+          <span style="font-size:12px; color:#1e6b37; font-weight:bold; text-transform:uppercase;">Trình độ quy chiếu VSTEP</span>
+          <div style="font-size:24px; font-weight:800; color:#1e6b37; margin:4px 0;" id="pdfVstep">Bậc 2 (A2)</div>
+          <p style="font-size:13px; color:#444;">Điểm trung bình (Overall Score): <strong id="pdfOverall">7.5</strong> / 10</p>
+        </div>
+
+        <h3 style="color:#1e6b37; font-size:15px; margin-bottom:10px;">📊 CHẤM ĐIỂM CHI TIẾT 5 TIÊU CHÍ:</h3>
+        <table style="width:100%; border-collapse:collapse; margin-bottom:20px; font-size:13px;">
+          <thead>
+            <tr style="background:#e2e8f0; color:#1e293b;">
+              <th style="padding:8px; border:1px solid #cbd5e1;">Phát âm</th>
+              <th style="padding:8px; border:1px solid #cbd5e1;">Ngữ pháp</th>
+              <th style="padding:8px; border:1px solid #cbd5e1;">Từ vựng</th>
+              <th style="padding:8px; border:1px solid #cbd5e1;">Trôi chảy</th>
+              <th style="padding:8px; border:1px solid #cbd5e1;">Tương tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="text-align:center; font-weight:bold; color:#1e6b37;">
+              <td style="padding:10px; border:1px solid #cbd5e1;" id="pdfPronun">8.0</td>
+              <td style="padding:10px; border:1px solid #cbd5e1;" id="pdfGrammar">7.5</td>
+              <td style="padding:10px; border:1px solid #cbd5e1;" id="pdfVocab">7.0</td>
+              <td style="padding:10px; border:1px solid #cbd5e1;" id="pdfFluency">7.5</td>
+              <td style="padding:10px; border:1px solid #cbd5e1;" id="pdfInteract">8.0</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div style="font-size:13px; line-height:1.6; margin-bottom:25px;">
+          <p style="margin-bottom:8px;"><strong>💪 Điểm mạnh:</strong> <span id="pdfStrengths">...</span></p>
+          <p style="margin-bottom:8px;"><strong>⚠️ Cần cải thiện:</strong> <span id="pdfWeaknesses">...</span></p>
+          <p style="margin-bottom:8px;"><strong>🎯 Khuyến nghị bài học tiếp theo:</strong> <span id="pdfNextLesson">...</span></p>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:30px; border-top:1px dashed #ccc; padding-top:15px;">
+          <div style="font-size:11px; color:#888;">
+            AEEF System | Made by Huycomf
+          </div>
+          <div style="text-align:center;">
+            <p style="font-size:12px; font-weight:bold; color:#1e6b37;">XÁC NHẬN GIÁO VIÊN</p>
+            <div style="height:45px;"></div>
+            <p style="font-size:12px; font-style:italic;">(Đã ký & duyệt tự động)</p>
+          </div>
+        </div>
+      </div>
+    </div>
   </main>
 
-  <!-- Footer với thông tin tác giả Made by Huycomf -->
   <footer class="app-footer">
     AEEF Classroom &copy; 2026 | Made by <a href="https://zalo.me/0907218089" target="_blank">Huycomf</a>
   </footer>
@@ -256,14 +336,13 @@
     let isListening = false;
     let activeLessonsList = [];
     let isTeacherView = false;
-    let isTeacherAuthenticated = false; // Trạng thái xác thực mật khẩu
+    let isTeacherAuthenticated = false;
     let rawScoresData = [];
 
     window.onload = function() {
       fetchAppInitData();
     };
 
-    // Hàm quay về Home
     function goHome() {
       isTeacherView = false;
       document.getElementById('btnTeacherToggle').innerText = '👨‍🏫 Teacher Dashboard';
@@ -271,7 +350,6 @@
       document.getElementById('dashScreen').style.display = 'none';
       document.getElementById('chatScreen').style.display = 'none';
       
-      // Reset về màn hình Welcome/Login
       currentStudent = '';
       document.getElementById('studentDisplay').innerText = 'Guest';
       document.getElementById('studentId').value = '';
@@ -313,13 +391,70 @@
       `).join('');
     }
 
-    function login() {
+    async function login() {
       const val = document.getElementById('studentId').value.trim();
       if (!val) return alert("Please enter Student ID!");
       currentStudent = val;
       document.getElementById('studentDisplay').innerText = val;
       document.getElementById('loginScreen').style.display = 'none';
       document.getElementById('dashScreen').style.display = 'block';
+
+      // Nạp Bảng Xếp Hạng khi đăng nhập
+      fetchLeaderboardData();
+    }
+
+    async function fetchLeaderboardData() {
+      try {
+        const res = await fetch(GAS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action: 'getTeacherDashboard' })
+        });
+        const data = await res.json();
+        if (data.success && data.scores) {
+          renderLeaderboard(data.scores);
+        }
+      } catch (e) {
+        console.error("Lỗi nạp Leaderboard:", e);
+      }
+    }
+
+    function renderLeaderboard(scores) {
+      const lbContainer = document.getElementById('leaderboardList');
+      if (!scores || scores.length === 0) {
+        lbContainer.innerHTML = '<p style="font-size:13px; opacity:0.8;">Hãy là người đầu tiên luyện tập để lên Top Bảng Xếp Hạng!</p>';
+        return;
+      }
+
+      // Thống kê tổng số lượt bài tập và điểm trung bình theo từng StudentID
+      const studentMap = {};
+      scores.forEach(s => {
+        const sid = s.StudentID || 'N/A';
+        if (!studentMap[sid]) studentMap[sid] = { count: 0, totalOverall: 0 };
+        studentMap[sid].count += 1;
+        studentMap[sid].totalOverall += Number(s.Overall) || 0;
+      });
+
+      const sortedList = Object.keys(studentMap).map(sid => ({
+        studentId: sid,
+        count: studentMap[sid].count,
+        avgScore: (studentMap[sid].totalOverall / studentMap[sid].count).toFixed(1)
+      })).sort((a, b) => b.count - a.count || b.avgScore - a.avgScore).slice(0, 3); // Lấy Top 3
+
+      const badges = ['🥇 TOP 1', '🥈 TOP 2', '🥉 TOP 3'];
+
+      lbContainer.innerHTML = sortedList.map((item, index) => `
+        <div class="lb-item">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span class="lb-rank">${badges[index]}</span>
+            <strong>${item.studentId}</strong>
+          </div>
+          <div style="font-size:13px;">
+            <span>🔥 <strong>${item.count}</strong> bài luyện tập</span> | 
+            <span>⭐ Avg: <strong>${item.avgScore}</strong>/10</span>
+          </div>
+        </div>
+      `).join('');
     }
 
     async function startLesson(topic, customPrompt) {
@@ -541,7 +676,6 @@
     /* ----------- TEACHER DASHBOARD LOGIC ----------- */
     async function toggleTeacherDashboard() {
       if (!isTeacherView) {
-        // Kiểm tra mật khẩu nếu chưa xác thực
         if (!isTeacherAuthenticated) {
           const pwd = prompt("🔒 Nhập mật khẩu Giáo viên:");
           if (pwd !== 'Aplus') {
@@ -620,7 +754,7 @@
         return;
       }
 
-      tbody.innerHTML = scores.map(row => `
+      tbody.innerHTML = scores.map((row, index) => `
         <tr>
           <td><strong>${row.StudentID || 'N/A'}</strong></td>
           <td>${row.LessonID || 'Practice'}</td>
@@ -628,12 +762,48 @@
           <td>${row.Grammar || 0}</td>
           <td>${row.Vocabulary || 0}</td>
           <td>${row.Fluency || 0}</td>
-          <td>${row.Interaction || 0}</td>
           <td><strong style="color:var(--primary);">${row.Overall || 0}</strong></td>
           <td><span class="level-badge">${row.VSTEP || 'N/A'}</span></td>
-          <td style="font-size:12px; color:#888;">${row.Timestamp || ''}</td>
+          <td style="font-size:11px; color:#888;">${row.Timestamp || ''}</td>
+          <td>
+            <button class="btn btn-sm" style="background:#1e6b37;" onclick="generatePDFReport(${index})">📄 In Phiếu PDF</button>
+          </td>
         </tr>
       `).join('');
+    }
+
+    /* ----------- HÀM XUẤT PHIẾU BÁO CÁO PDF ----------- */
+    function generatePDFReport(index) {
+      const item = rawScoresData[index];
+      if (!item) return alert("Không tìm thấy dữ liệu học sinh!");
+
+      document.getElementById('pdfStudentId').innerText = item.StudentID || 'N/A';
+      document.getElementById('pdfLesson').innerText = item.LessonID || 'General Speaking Practice';
+      document.getElementById('pdfVstep').innerText = item.VSTEP || 'Bậc 2 (A2)';
+      document.getElementById('pdfOverall').innerText = item.Overall || 0;
+
+      document.getElementById('pdfPronun').innerText = item.Pronunciation || 0;
+      document.getElementById('pdfGrammar').innerText = item.Grammar || 0;
+      document.getElementById('pdfVocab').innerText = item.Vocabulary || 0;
+      document.getElementById('pdfFluency').innerText = item.Fluency || 0;
+      document.getElementById('pdfInteract').innerText = item.Interaction || 0;
+
+      document.getElementById('pdfStrengths').innerText = item.Strengths || 'Học sinh phản hồi tự nhiên, tích cực tham gia hội thoại.';
+      document.getElementById('pdfWeaknesses').innerText = item.Weaknesses || 'Cần chú ý chia động từ và phát âm đuôi rõ ràng hơn.';
+      document.getElementById('pdfNextLesson').innerText = item.NextLesson || 'Tiếp tục thực hành các câu hỏi phản xạ tốc độ cao.';
+      
+      document.getElementById('pdfDate').innerText = 'Ngày: ' + (item.Timestamp ? item.Timestamp.split(' ')[0] : new Date().toLocaleDateString('vi-VN'));
+
+      const element = document.getElementById('pdfContent');
+      const opt = {
+        margin:       10,
+        filename:     `Phieu_Bao_Cao_${item.StudentID}_${new Date().toISOString().slice(0,10)}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2 },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+
+      html2pdf().set(opt).from(element).save();
     }
 
     function exportScoresToCSV() {
