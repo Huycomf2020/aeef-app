@@ -531,37 +531,64 @@
       else recognition.start();
     }
 
-    function startListening() {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SpeechRecognition) return;
-
-      if (!recognition) {
-        recognition = new SpeechRecognition();
-        recognition.lang = 'en-US';
-        
-        recognition.onstart = () => {
-          isListening = true;
-          document.getElementById('micBtn').classList.add('recording');
-          showStatus("🎙️ Listening... Speak now!");
-        };
-
-        recognition.onresult = (e) => {
-          const transcript = e.results[0][0].transcript;
-          document.getElementById('chatInput').value = transcript;
-          removeStatus();
-          sendMsg();
-        };
-
-        recognition.onend = () => {
-          isListening = false;
-          document.getElementById('micBtn').classList.remove('recording');
-          removeStatus();
-        };
-      }
-
-      try { recognition.start(); } catch(err){}
+   function startListening() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+        alert("Trình duyệt không hỗ trợ nhận diện giọng nói. Vui lòng mở bằng Google Chrome!");
+        return;
     }
 
+    // Nếu đang nghe thì bấm nút sẽ dừng lại
+    if (isListening) {
+        if (recognition) recognition.stop();
+        return;
+    }
+
+    // Khởi tạo mới mỗi lần bấm để tránh bị treo luồng Micro trên Mobile
+    recognition = new SpeechRecognition();
+    
+    // Cấu hình tối ưu riêng cho điện thoại
+    recognition.continuous = false;   // Ngắt luồng ngay sau câu nói để tránh treo Mic Android
+    recognition.interimResults = false;
+    recognition.lang = 'en-US';        // Ép chuẩn nhận diện tiếng Anh
+
+    recognition.onstart = () => {
+        isListening = true;
+        document.getElementById('micBtn').classList.add('recording');
+        showStatus("🎙️ Listening... Speak now!");
+    };
+
+    recognition.onresult = (e) => {
+        const transcript = e.results[0][0].transcript;
+        document.getElementById('chatInput').value = transcript;
+        removeStatus();
+        sendMsg(); // Tự động gửi tin nhắn sau khi nhận dạng lời nói
+    };
+
+    recognition.onerror = (e) => {
+        console.error("Speech error:", e.error);
+        isListening = false;
+        document.getElementById('micBtn').classList.remove('recording');
+        removeStatus();
+        if (e.error === 'no-speech') {
+            showStatus("⚠️ Không nghe thấy tiếng, thử lại nhé!");
+            setTimeout(removeStatus, 2000);
+        }
+    };
+
+    recognition.onend = () => {
+        isListening = false;
+        document.getElementById('micBtn').classList.remove('recording');
+        removeStatus();
+    };
+
+    // Kích hoạt thu âm
+    try {
+        recognition.start();
+    } catch (err) {
+        console.log("Start error:", err);
+    }
+}
     async function sendMsg() {
       const input = document.getElementById('chatInput');
       const text = input.value.trim();
