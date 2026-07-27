@@ -531,26 +531,27 @@
       else recognition.start();
     }
 
-   function startListening() {
+ function startListening() {
+    // Tắt ngay giọng đọc AI nếu đang phát âm thanh "Nghe lại"
+    if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+    }
+
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-        alert("Trình duyệt không hỗ trợ nhận diện giọng nói. Vui lòng mở bằng Google Chrome!");
+        alert("Trình duyệt không hỗ trợ nhận diện giọng nói. Hãy mở bằng Google Chrome!");
         return;
     }
 
-    // Nếu đang nghe thì bấm nút sẽ dừng lại
     if (isListening) {
         if (recognition) recognition.stop();
         return;
     }
 
-    // Khởi tạo mới mỗi lần bấm để tránh bị treo luồng Micro trên Mobile
     recognition = new SpeechRecognition();
-    
-    // Cấu hình tối ưu riêng cho điện thoại
-    recognition.continuous = false;   // Ngắt luồng ngay sau câu nói để tránh treo Mic Android
+    recognition.continuous = false;
     recognition.interimResults = false;
-    recognition.lang = 'en-US';        // Ép chuẩn nhận diện tiếng Anh
+    recognition.lang = 'en-US';
 
     recognition.onstart = () => {
         isListening = true;
@@ -562,7 +563,7 @@
         const transcript = e.results[0][0].transcript;
         document.getElementById('chatInput').value = transcript;
         removeStatus();
-        sendMsg(); // Tự động gửi tin nhắn sau khi nhận dạng lời nói
+        sendMsg();
     };
 
     recognition.onerror = (e) => {
@@ -571,7 +572,7 @@
         document.getElementById('micBtn').classList.remove('recording');
         removeStatus();
         if (e.error === 'no-speech') {
-            showStatus("⚠️ Không nghe thấy tiếng, thử lại nhé!");
+            showStatus("⚠️ Không nghe thấy tiếng, hãy thử nói to hơn!");
             setTimeout(removeStatus, 2000);
         }
     };
@@ -582,7 +583,6 @@
         removeStatus();
     };
 
-    // Kích hoạt thu âm
     try {
         recognition.start();
     } catch (err) {
