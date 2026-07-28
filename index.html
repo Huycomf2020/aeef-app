@@ -469,22 +469,26 @@
       
       appendBubble('ai', `Hello! I'm your ${topic} companion. Let's practice English together!`);
       
-try {
-  navigator.mediaDevices.getUserMedia({ 
-    video: { facingMode: "user" }, 
-    audio: false 
-  })
-  .then(function(stream) {
-    const userVideo = document.getElementById('userVideo');
-    if (userVideo) userVideo.srcObject = stream;
-  })
-  .catch(function(err) {
-    console.warn("Camera Permission denied or unavailable:", err);
-  });
-} catch (err) {
-  console.warn("MediaDevices error:", err);
-}      
-    }
+// Bật Camera với audio: false để giải phóng Micro
+      try {
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+          navigator.mediaDevices.getUserMedia({ 
+            video: { facingMode: "user" }, 
+            audio: false 
+          })
+          .then(function(stream) {
+            const userVideo = document.getElementById('userVideo');
+            if (userVideo) userVideo.srcObject = stream;
+          })
+          .catch(function(err) {
+            console.warn("Camera Permission denied or unavailable:", err);
+          });
+        }
+      } catch (err) {
+        console.warn("MediaDevices error:", err);
+      }
+    } // 👉 ĐÂY LÀ DẤU ĐÓNG NGOẶC CỦA HÀM startLesson ĐÃ ĐƯỢC BỔ SUNG
+    
     function speakText(text) {
       if (!('speechSynthesis' in window)) return;
       
