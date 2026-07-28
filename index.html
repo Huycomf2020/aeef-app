@@ -469,17 +469,21 @@
       
       appendBubble('ai', `Hello! I'm your ${topic} companion. Let's practice English together!`);
       
-      try {
-  // Sửa audio: false để KHÔNG chiếm quyền Micro của Speech Recognition
-  const stream = await navigator.mediaDevices.getUserMedia({ 
+try {
+  navigator.mediaDevices.getUserMedia({ 
     video: { facingMode: "user" }, 
     audio: false 
+  })
+  .then(function(stream) {
+    const userVideo = document.getElementById('userVideo');
+    if (userVideo) userVideo.srcObject = stream;
+  })
+  .catch(function(err) {
+    console.warn("Camera Permission denied or unavailable:", err);
   });
-  document.getElementById('userVideo').srcObject = stream;
 } catch (err) {
-  console.warn("Camera Permission denied or unavailable:", err);
-}
-      
+  console.warn("MediaDevices error:", err);
+}      
     function speakText(text) {
       if (!('speechSynthesis' in window)) return;
       
