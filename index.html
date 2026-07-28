@@ -73,9 +73,6 @@
 
     .app-footer { text-align: center; padding: 18px; background: #fff; border-top: 1px solid #e2e8f0; font-size: 0.9rem; color: #64748b; margin-top: auto; }
     .app-footer a { color: var(--primary); font-weight: 700; text-decoration: none; }
-    
-    /* PDF Template hidden styling */
-    #pdfReportTemplate { display: none; background: #fff; padding: 30px; font-family: 'Plus Jakarta Sans', sans-serif; color: #2c3e50; }
   </style>
 </head>
 <body>
@@ -100,9 +97,8 @@
       <button class="btn" style="width:100%;" onclick="login()">Start Practice</button>
     </section>
 
-    <!-- Màn hình Chọn Bài học & Bảng Xếp Hạng (Học sinh) -->
+    <!-- Màn hình Chọn Bài học & Bảng Xếp Hạng -->
     <section id="dashScreen" style="display:none;">
-      <!-- BẢNG XẾP HẠNG LEADERBOARD -->
       <div class="leaderboard-card">
         <h3 style="margin-bottom:12px; display:flex; align-items:center; gap:8px;">🏆 LEADERBOARD - TOP HỌC SINH CHĂM CHỈ</h3>
         <div id="leaderboardList">
@@ -201,7 +197,7 @@
       </div>
     </section>
 
-    <!-- Modal hiển thị Báo cáo AI Assessment -->
+    <!-- Modal Báo cáo AI Assessment -->
     <div id="assessmentModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.6); z-index:99999; align-items:center; justify-content:center;">
       <div style="background:#fff; padding:30px; border-radius:18px; max-width:600px; width:92%; max-height:90vh; overflow-y:auto; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
         <h2 style="color:var(--primary); text-align:center; margin-bottom:5px;">📊 AI Speaking Assessment</h2>
@@ -254,9 +250,9 @@
       </div>
     </div>
 
-<!-- KHUNG IN MẪU PHIẾU BÁO CÁO PDF (ĐÃ TỐI ƯU CẤU TRÚC A4) -->
-    <div id="pdfPrintContainer" style="position:fixed; left:-9999px; top:0; width:100%;">
-      <div id="pdfContent" style="width:750px; min-height:1000px; padding:30px; background:#fff; font-family:'Plus Jakarta Sans', sans-serif; border:2px solid #1e6b37; border-radius:12px; box-sizing:border-box;">
+    <!-- KHUNG IN MẪU PHIẾU BÁO CÁO PDF (ĐÃ TỐI ƯU HIỂN THỊ CHUẨN A4) -->
+    <div id="pdfPrintContainer" style="position:fixed; top:-9999px; left:-9999px; opacity:0; pointer-events:none; z-index:-1;">
+      <div id="pdfContent" style="width:750px; padding:30px; background:#fff; font-family:'Plus Jakarta Sans', sans-serif; border:2px solid #1e6b37; border-radius:12px; box-sizing:border-box;">
         
         <!-- HEADER -->
         <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #1e6b37; padding-bottom:12px; margin-bottom:15px;">
@@ -327,7 +323,13 @@
 
       </div>
     </div>
-    <script>
+  </main>
+
+  <footer class="app-footer">
+    AEEF Classroom &copy; 2026 | Made by <a href="https://zalo.me/0907218089" target="_blank">Huycomf</a>
+  </footer>
+
+  <script>
     const GAS_URL = "https://script.google.com/macros/s/AKfycby8Z3CggKB5McWgP_65bS2hoYJkqOP3bzj_Ux2USG9Ker1AU1QhLow59PJQynb78rrX/exec";
 
     let currentStudent = '';
@@ -401,7 +403,6 @@
       document.getElementById('loginScreen').style.display = 'none';
       document.getElementById('dashScreen').style.display = 'block';
 
-      // Nạp Bảng Xếp Hạng khi đăng nhập
       fetchLeaderboardData();
     }
 
@@ -428,20 +429,20 @@
         return;
       }
 
-      // Thống kê tổng số lượt bài tập và điểm trung bình theo từng StudentID
       const studentMap = {};
       scores.forEach(s => {
-        const sid = s.StudentID || 'N/A';
+        const sid = s.studentId || s.StudentID || 'N/A';
+        const overall = Number(s.overall || s.Overall) || 0;
         if (!studentMap[sid]) studentMap[sid] = { count: 0, totalOverall: 0 };
         studentMap[sid].count += 1;
-        studentMap[sid].totalOverall += Number(s.Overall) || 0;
+        studentMap[sid].totalOverall += overall;
       });
 
       const sortedList = Object.keys(studentMap).map(sid => ({
         studentId: sid,
         count: studentMap[sid].count,
         avgScore: (studentMap[sid].totalOverall / studentMap[sid].count).toFixed(1)
-      })).sort((a, b) => b.count - a.count || b.avgScore - a.avgScore).slice(0, 3); // Lấy Top 3
+      })).sort((a, b) => b.count - a.count || b.avgScore - a.avgScore).slice(0, 3);
 
       const badges = ['🥇 TOP 1', '🥈 TOP 2', '🥉 TOP 3'];
 
@@ -471,7 +472,6 @@
       
       appendBubble('ai', `Hello! I'm your ${topic} companion. Let's practice English together!`);
       
-// Bật Camera với audio: false để giải phóng Micro
       try {
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
           navigator.mediaDevices.getUserMedia({ 
@@ -489,7 +489,7 @@
       } catch (err) {
         console.warn("MediaDevices error:", err);
       }
-    } // 👉 ĐÂY LÀ DẤU ĐÓNG NGOẶC CỦA HÀM startLesson ĐÃ ĐƯỢC BỔ SUNG
+    }
     
     function speakText(text) {
       if (!('speechSynthesis' in window)) return;
@@ -517,92 +517,62 @@
     }
 
     function toggleMic() {
+      startListening();
+    }
+
+    function startListening() {
+      if (window.speechSynthesis) window.speechSynthesis.cancel();
+
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SpeechRecognition) return alert("Browser does not support Speech Recognition. Use Chrome or Edge.");
+      if (!SpeechRecognition) return alert("Trình duyệt không hỗ trợ nhận diện giọng nói. Hãy mở bằng Google Chrome!");
 
-      if (!recognition) {
-        recognition = new SpeechRecognition();
-        recognition.lang = 'en-US';
-        recognition.onstart = () => {
-          isListening = true;
-          document.getElementById('micBtn').classList.add('recording');
-          showStatus("🎙️ Listening... Speak now!");
-        };
-        recognition.onresult = (e) => {
-          const transcript = e.results[0][0].transcript;
-          document.getElementById('chatInput').value = transcript;
-          removeStatus();
-          sendMsg();
-        };
-        recognition.onend = () => {
-          isListening = false;
-          document.getElementById('micBtn').classList.remove('recording');
-          removeStatus();
-        };
-      }
-
-      if (isListening) recognition.stop();
-      else recognition.start();
-    }
-
- function startListening() {
-    // Tắt ngay giọng đọc AI nếu đang phát âm thanh "Nghe lại"
-    if (window.speechSynthesis) {
-        window.speechSynthesis.cancel();
-    }
-
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-        alert("Trình duyệt không hỗ trợ nhận diện giọng nói. Hãy mở bằng Google Chrome!");
-        return;
-    }
-
-    if (isListening) {
+      if (isListening) {
         if (recognition) recognition.stop();
         return;
-    }
+      }
 
-    recognition = new SpeechRecognition();
-    recognition.continuous = false;
-    recognition.interimResults = false;
-    recognition.lang = 'en-US';
+      recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = 'en-US';
 
-    recognition.onstart = () => {
+      recognition.onstart = () => {
         isListening = true;
         document.getElementById('micBtn').classList.add('recording');
         showStatus("🎙️ Listening... Speak now!");
-    };
+      };
 
-    recognition.onresult = (e) => {
+      recognition.onresult = (e) => {
         const transcript = e.results[0][0].transcript;
         document.getElementById('chatInput').value = transcript;
         removeStatus();
         sendMsg();
-    };
+      };
 
-    recognition.onerror = (e) => {
+      recognition.onerror = (e) => {
         console.error("Speech error:", e.error);
         isListening = false;
         document.getElementById('micBtn').classList.remove('recording');
         removeStatus();
         if (e.error === 'no-speech') {
-            showStatus("⚠️ Không nghe thấy tiếng, hãy thử nói to hơn!");
-            setTimeout(removeStatus, 2000);
+          showStatus("⚠️ Không nghe thấy tiếng, hãy thử nói to hơn!");
+          setTimeout(removeStatus, 2000);
         }
-    };
+      };
 
-    recognition.onend = () => {
+      recognition.onend = () => {
         isListening = false;
         document.getElementById('micBtn').classList.remove('recording');
         removeStatus();
-    };
+      };
 
-    try {
+      try {
         recognition.start();
-    } catch (err) {
+      } catch (err) {
         console.log("Start error:", err);
+      }
     }
-}
+
     async function sendMsg() {
       const input = document.getElementById('chatInput');
       const text = input.value.trim();
@@ -761,13 +731,13 @@
           document.getElementById('kpiTurns').innerText = turns;
 
           if (rawScoresData.length > 0) {
-            const sumOverall = rawScoresData.reduce((acc, curr) => acc + (Number(curr.Overall) || 0), 0);
+            const sumOverall = rawScoresData.reduce((acc, curr) => acc + (Number(curr.overall || curr.Overall) || 0), 0);
             const avgOverall = (sumOverall / rawScoresData.length).toFixed(1);
             document.getElementById('kpiAccuracy').innerText = avgOverall + ' / 10';
 
             const vstepCounts = {};
             rawScoresData.forEach(s => {
-              const v = s.VSTEP || 'Bậc 2 (A2)';
+              const v = s.vstep || s.VSTEP || 'Bậc 2 (A2)';
               vstepCounts[v] = (vstepCounts[v] || 0) + 1;
             });
             let popVstep = 'Bậc 2 (A2)';
@@ -795,74 +765,107 @@
         return;
       }
 
-      tbody.innerHTML = scores.map((row, index) => `
-        <tr>
-          <td><strong>${row.StudentID || 'N/A'}</strong></td>
-          <td>${row.LessonID || 'Practice'}</td>
-          <td>${row.Pronunciation || 0}</td>
-          <td>${row.Grammar || 0}</td>
-          <td>${row.Vocabulary || 0}</td>
-          <td>${row.Fluency || 0}</td>
-          <td><strong style="color:var(--primary);">${row.Overall || 0}</strong></td>
-          <td><span class="level-badge">${row.VSTEP || 'N/A'}</span></td>
-          <td style="font-size:11px; color:#888;">${row.Timestamp || ''}</td>
-          <td>
-            <button class="btn btn-sm" style="background:#1e6b37;" onclick="generatePDFReport(${index})">📄 In Phiếu PDF</button>
-          </td>
-        </tr>
-      `).join('');
+      tbody.innerHTML = scores.map((row, index) => {
+        const sid = row.studentId || row.StudentID || 'N/A';
+        const lesson = row.lessonId || row.LessonID || row.topic || 'Practice';
+        const pron = row.pronunciation || row.Pronunciation || 0;
+        const gram = row.grammar || row.Grammar || 0;
+        const vocab = row.vocabulary || row.Vocabulary || 0;
+        const flue = row.fluency || row.Fluency || 0;
+        const over = row.overall || row.Overall || 0;
+        const vstep = row.vstep || row.VSTEP || 'N/A';
+        const time = row.timestamp || row.Timestamp || '';
+
+        return `
+          <tr>
+            <td><strong>${sid}</strong></td>
+            <td>${lesson}</td>
+            <td>${pron}</td>
+            <td>${gram}</td>
+            <td>${vocab}</td>
+            <td>${flue}</td>
+            <td><strong style="color:var(--primary);">${over}</strong></td>
+            <td><span class="level-badge">${vstep}</span></td>
+            <td style="font-size:11px; color:#888;">${time}</td>
+            <td>
+              <button class="btn btn-sm" style="background:#1e6b37;" onclick="generatePDFReport(${index})">📄 In Phiếu PDF</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
     }
 
- /* ----------- HÀM XUẤT PHIẾU BÁO CÁO PDF (ĐÃ SỬA LỖI TRÀN MÀN HÌNH & THIẾU DỮ LIỆU) ----------- */
+    /* ----------- HÀM XUẤT PHIẾU BÁO CÁO PDF ĐÃ SỬA CHUẨN XÁC ----------- */
     function generatePDFReport(index) {
       const item = rawScoresData[index];
       if (!item) return alert("Không tìm thấy dữ liệu học sinh!");
 
-      // 1. Đổ dữ liệu vào các thẻ HTML
-      document.getElementById('pdfStudentId').innerText = item.StudentID || 'N/A';
-      document.getElementById('pdfLesson').innerText = item.LessonID || 'General Speaking Practice';
-      document.getElementById('pdfVstep').innerText = item.VSTEP || 'Bậc 2 (A2)';
-      document.getElementById('pdfOverall').innerText = item.Overall || 0;
+      // Đọc linh hoạt cả trường chữ hoa lẫn chữ thường từ Sheet Object
+      const sid = item.studentId || item.StudentID || 'N/A';
+      const lesson = item.lessonId || item.LessonID || item.topic || 'General Speaking Practice';
+      const vstep = item.vstep || item.VSTEP || 'Bậc 2 (A2)';
+      const overall = item.overall || item.Overall || 0;
+      const pronun = item.pronunciation || item.Pronunciation || 0;
+      const grammar = item.grammar || item.Grammar || 0;
+      const vocab = item.vocabulary || item.Vocabulary || 0;
+      const fluency = item.fluency || item.Fluency || 0;
+      const interact = item.interaction || item.Interaction || 0;
+      const strengths = item.strengths || item.Strengths || 'Học sinh phản hồi tự nhiên, tích cực tham gia hội thoại.';
+      const weaknesses = item.weaknesses || item.Weaknesses || 'Cần chú ý chia động từ và phát âm đuôi rõ ràng hơn.';
+      const nextLesson = item.nextLesson || item.NextLesson || 'Tiếp tục thực hành các câu hỏi phản xạ tốc độ cao.';
+      const timestamp = item.timestamp || item.Timestamp || '';
 
-      document.getElementById('pdfPronun').innerText = item.Pronunciation || 0;
-      document.getElementById('pdfGrammar').innerText = item.Grammar || 0;
-      document.getElementById('pdfVocab').innerText = item.Vocabulary || 0;
-      document.getElementById('pdfFluency').innerText = item.Fluency || 0;
-      document.getElementById('pdfInteract').innerText = item.Interaction || 0;
+      // 1. Đổ dữ liệu vào DOM
+      document.getElementById('pdfStudentId').innerText = sid;
+      document.getElementById('pdfLesson').innerText = lesson;
+      document.getElementById('pdfVstep').innerText = vstep;
+      document.getElementById('pdfOverall').innerText = overall;
 
-      document.getElementById('pdfStrengths').innerText = item.Strengths || 'Học sinh phản hồi tự nhiên, tích cực tham gia hội thoại.';
-      document.getElementById('pdfWeaknesses').innerText = item.Weaknesses || 'Cần chú ý chia động từ và phát âm đuôi rõ ràng hơn.';
-      document.getElementById('pdfNextLesson').innerText = item.NextLesson || 'Tiếp tục thực hành các câu hỏi phản xạ tốc độ cao.';
+      document.getElementById('pdfPronun').innerText = pronun;
+      document.getElementById('pdfGrammar').innerText = grammar;
+      document.getElementById('pdfVocab').innerText = vocab;
+      document.getElementById('pdfFluency').innerText = fluency;
+      document.getElementById('pdfInteract').innerText = interact;
+
+      document.getElementById('pdfStrengths').innerText = strengths;
+      document.getElementById('pdfWeaknesses').innerText = weaknesses;
+      document.getElementById('pdfNextLesson').innerText = nextLesson;
       
-      document.getElementById('pdfDate').innerText = 'Ngày: ' + (item.Timestamp ? String(item.Timestamp).split(' ')[0] : new Date().toLocaleDateString('vi-VN'));
+      document.getElementById('pdfDate').innerText = 'Ngày: ' + (timestamp ? String(timestamp).split(' ')[0] : new Date().toLocaleDateString('vi-VN'));
 
       const container = document.getElementById('pdfPrintContainer');
       const element = document.getElementById('pdfContent');
 
-      // 2. Tạm thời đưa khung PDF vào vùng hiển thị hợp lệ để html2canvas tính đúng chiều cao
-      container.style.position = 'fixed';
-      container.style.left = '0';
-      container.style.top = '0';
-      container.style.zIndex = '-9999';
+      // 2. Hiện khung PDF tạm thời trên màn hình để html2canvas chụp đúng kích thước
+      container.style.top = '0px';
+      container.style.left = '0px';
       container.style.opacity = '1';
+      container.style.zIndex = '99999';
+      container.style.background = '#ffffff';
 
-      // 3. Đợi 200ms cho DOM render xong trọn vẹn chữ và bảng điểm rồi mới xuất PDF
       setTimeout(function() {
         const opt = {
           margin:       5,
-          filename:     `Phieu_Bao_Cao_${item.StudentID}_${new Date().toISOString().slice(0,10)}.pdf`,
+          filename:     `Phieu_Bao_Cao_${sid}_${new Date().toISOString().slice(0,10)}.pdf`,
           image:        { type: 'jpeg', quality: 0.98 },
           html2canvas:  { scale: 2, useCORS: true, logging: false },
           jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
         html2pdf().set(opt).from(element).save().then(function() {
-          // Xuất xong thì ẩn khung lại như cũ
-          container.style.position = 'absolute';
-          container.style.left = '-9999px';
+          // 3. Ẩn lại sau khi tải file thành công
           container.style.top = '-9999px';
+          container.style.left = '-9999px';
+          container.style.opacity = '0';
+          container.style.zIndex = '-1';
+        }).catch(function(err) {
+          console.error("Lỗi PDF:", err);
+          container.style.top = '-9999px';
+          container.style.left = '-9999px';
+          container.style.opacity = '0';
+          container.style.zIndex = '-1';
         });
-      }, 200);
+      }, 300);
     }
       
     function exportScoresToCSV() {
@@ -872,20 +875,34 @@
       csvContent += "StudentID,LessonID,Pronunciation,Grammar,Vocabulary,Fluency,Interaction,Overall,VSTEP,Strengths,Weaknesses,NextLesson,Timestamp\n";
 
       rawScoresData.forEach(r => {
+        const sid = r.studentId || r.StudentID || '';
+        const lesson = r.lessonId || r.LessonID || r.topic || '';
+        const pron = r.pronunciation || r.Pronunciation || 0;
+        const gram = r.grammar || r.Grammar || 0;
+        const vocab = r.vocabulary || r.Vocabulary || 0;
+        const flue = r.fluency || r.Fluency || 0;
+        const inter = r.interaction || r.Interaction || 0;
+        const over = r.overall || r.Overall || 0;
+        const vst = r.vstep || r.VSTEP || '';
+        const str = r.strengths || r.Strengths || '';
+        const weak = r.weaknesses || r.Weaknesses || '';
+        const next = r.nextLesson || r.NextLesson || '';
+        const time = r.timestamp || r.Timestamp || '';
+
         let row = [
-          `"${r.StudentID || ''}"`,
-          `"${r.LessonID || ''}"`,
-          r.Pronunciation || 0,
-          r.Grammar || 0,
-          r.Vocabulary || 0,
-          r.Fluency || 0,
-          r.Interaction || 0,
-          r.Overall || 0,
-          `"${r.VSTEP || ''}"`,
-          `"${(r.Strengths || '').replace(/"/g, '""')}"`,
-          `"${(r.Weaknesses || '').replace(/"/g, '""')}"`,
-          `"${(r.NextLesson || '').replace(/"/g, '""')}"`,
-          `"${r.Timestamp || ''}"`
+          `"${sid}"`,
+          `"${lesson}"`,
+          pron,
+          gram,
+          vocab,
+          flue,
+          inter,
+          over,
+          `"${vst}"`,
+          `"${str.replace(/"/g, '""')}"`,
+          `"${weak.replace(/"/g, '""')}"`,
+          `"${next.replace(/"/g, '""')}"`,
+          `"${time}"`
         ];
         csvContent += row.join(",") + "\n";
       });
