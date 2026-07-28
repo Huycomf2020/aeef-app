@@ -377,24 +377,60 @@
       }
     }
 
-    function renderLessonsGrid(lessons) {
+function renderLessonsGrid(lessons) {
       const grid = document.getElementById('lessonsGrid');
       if (!lessons || lessons.length === 0) {
         grid.innerHTML = '<p style="color:#666;">Không có bài học nào khả dụng.</p>';
         return;
       }
 
-      grid.innerHTML = lessons.map(lesson => `
-        <div class="card" style="margin-bottom:0;">
-          <div class="unit-tag">${lesson.Unit || 'Lesson'}</div>
-          <h3 style="color:var(--primary);">${lesson.Title}</h3>
-          <p style="color:#555;font-size:14px;margin:6px 0;"><strong>Role:</strong> ${lesson.Role}</p>
-          <p style="color:#888;font-size:13px;margin-bottom:12px;">Difficulty: ${lesson.Difficulty || '★★☆'}</p>
-          <button class="btn" style="width:100%;padding:10px 20px;" onclick="startLesson('${lesson.Title} (${lesson.Role})', '${(lesson.Prompt || '').replace(/'/g, "\\'")}')">Open Lesson</button>
-        </div>
-      `).join('');
-    }
+      // Định nghĩa 4 nhóm chuẩn
+      const categories = [
+        { key: '10', title: '📘 TIẾNG ANH 10' },
+        { key: '11', title: '📗 TIẾNG ANH 11' },
+        { key: '12', title: '📙 TIẾNG ANH 12' },
+        { key: 'Khác', title: '🌐 CHỦ ĐỀ KHÁC / MỞ RỘNG' }
+      ];
 
+      let html = '';
+
+      categories.forEach(cat => {
+        // Lọc bài học theo Grade (chấp nhận cả '10', 'Tiếng Anh 10',...)
+        const groupLessons = lessons.filter(l => {
+          const g = String(l.Grade || '').trim().toLowerCase();
+          if (cat.key === 'Khác') {
+            return !g || g === 'khác' || (!g.includes('10') && !g.includes('11') && !g.includes('12'));
+          }
+          return g.includes(cat.key);
+        });
+
+        // Nếu nhóm có bài học thì mới hiển thị Tiêu đề và Danh sách
+        if (groupLessons.length > 0) {
+          html += `
+            <div style="grid-column: 1 / -1; margin-top: 20px; margin-bottom: 10px;">
+              <h3 style="color: var(--primary); font-size: 1.2rem; border-bottom: 2px solid var(--primary); padding-bottom: 6px;">
+                ${cat.title}
+              </h3>
+            </div>
+          `;
+
+          groupLessons.forEach(lesson => {
+            html += `
+              <div class="card" style="margin-bottom:0;">
+                <div class="unit-tag">${lesson.Unit || 'Lesson'}</div>
+                <h3 style="color:var(--primary);">${lesson.Title}</h3>
+                <p style="color:#555;font-size:14px;margin:6px 0;"><strong>Role:</strong> ${lesson.Role}</p>
+                <p style="color:#888;font-size:13px;margin-bottom:12px;">Difficulty: ${lesson.Difficulty || '★★☆'}</p>
+                <button class="btn" style="width:100%;padding:10px 20px;" onclick="startLesson('${lesson.Title} (${lesson.Role})', '${(lesson.Prompt || '').replace(/'/g, "\\'")}')">Open Lesson</button>
+              </div>
+            `;
+          });
+        }
+      });
+
+      grid.innerHTML = html || '<p style="color:#666;">Không tìm thấy bài học phù hợp.</p>';
+    }
+    
     async function login() {
       const val = document.getElementById('studentId').value.trim();
       if (!val) return alert("Please enter Student ID!");
