@@ -378,24 +378,30 @@
     }
 
 function renderLessonsGrid(lessons) {
+      const dashScreen = document.getElementById('dashScreen');
       const grid = document.getElementById('lessonsGrid');
       if (!lessons || lessons.length === 0) {
-        grid.innerHTML = '<p style="color:#666;">Không có bài học nào khả dụng.</p>';
+        if (grid) grid.innerHTML = '<p style="color:#666;">Không có bài học nào khả dụng.</p>';
         return;
       }
 
-      // Định nghĩa 4 nhóm chuẩn
+      // Xóa hiển thị cũ của lessonsGrid
+      if (grid) grid.style.display = 'none';
+
+      // Xóa các bảng Grade đã tạo trước đó (nếu có) để tránh lặp lại
+      const oldSections = document.querySelectorAll('.grade-section');
+      oldSections.forEach(sec => sec.remove());
+
+      // 4 Nhóm Grade chuẩn
       const categories = [
-        { key: '10', title: '📘 TIẾNG ANH 10' },
-        { key: '11', title: '📗 TIẾNG ANH 11' },
-        { key: '12', title: '📙 TIẾNG ANH 12' },
-        { key: 'Khác', title: '🌐 CHỦ ĐỀ KHÁC / MỞ RỘNG' }
+        { key: '10', title: '📘 TIẾNG ANH 10', badge: 'Lớp 10' },
+        { key: '11', title: '📗 TIẾNG ANH 11', badge: 'Lớp 11' },
+        { key: '12', title: '📙 TIẾNG ANH 12', badge: 'Lớp 12' },
+        { key: 'Khác', title: '🌐 CHỦ ĐỀ MỞ RỘNG / KHÁC', badge: 'Mở rộng' }
       ];
 
-      let html = '';
-
       categories.forEach(cat => {
-        // Lọc bài học theo Grade (chấp nhận cả '10', 'Tiếng Anh 10',...)
+        // Lọc bài học thuộc Grade tương ứng
         const groupLessons = lessons.filter(l => {
           const g = String(l.Grade || '').trim().toLowerCase();
           if (cat.key === 'Khác') {
@@ -404,31 +410,49 @@ function renderLessonsGrid(lessons) {
           return g.includes(cat.key);
         });
 
-        // Nếu nhóm có bài học thì mới hiển thị Tiêu đề và Danh sách
+        // Chỉ tạo BẢNG RIÊNG LẺ khi khối đó có bài học
         if (groupLessons.length > 0) {
-          html += `
-            <div style="grid-column: 1 / -1; margin-top: 20px; margin-bottom: 10px;">
-              <h3 style="color: var(--primary); font-size: 1.2rem; border-bottom: 2px solid var(--primary); padding-bottom: 6px;">
-                ${cat.title}
-              </h3>
+          const section = document.createElement('div');
+          section.className = 'grade-section card';
+          section.style.marginBottom = '30px';
+          section.style.background = '#ffffff';
+          section.style.padding = '20px';
+          section.style.borderRadius = '16px';
+          section.style.boxShadow = '0 4px 15px rgba(0,0,0,0.04)';
+
+          // Title header riêng cho từng bảng
+          let sectionHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid var(--primary); padding-bottom:10px; margin-bottom:18px;">
+              <h3 style="color:var(--primary); font-size:1.25rem; font-weight:700; margin:0;">${cat.title}</h3>
+              <span style="background:#e8f5e9; color:var(--primary); font-size:0.8rem; font-weight:700; padding:4px 12px; border-radius:20px;">${groupLessons.length} bài học</span>
             </div>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:15px;">
           `;
 
+          // Các thẻ bài học bên trong bảng
           groupLessons.forEach(lesson => {
-            html += `
-              <div class="card" style="margin-bottom:0;">
-                <div class="unit-tag">${lesson.Unit || 'Lesson'}</div>
-                <h3 style="color:var(--primary);">${lesson.Title}</h3>
-                <p style="color:#555;font-size:14px;margin:6px 0;"><strong>Role:</strong> ${lesson.Role}</p>
-                <p style="color:#888;font-size:13px;margin-bottom:12px;">Difficulty: ${lesson.Difficulty || '★★☆'}</p>
-                <button class="btn" style="width:100%;padding:10px 20px;" onclick="startLesson('${lesson.Title} (${lesson.Role})', '${(lesson.Prompt || '').replace(/'/g, "\\'")}')">Open Lesson</button>
+            const gradeBadge = lesson.Grade ? `Grade ${lesson.Grade}` : cat.badge;
+            sectionHTML += `
+              <div class="card" style="margin-bottom:0; background:#f9fbf9; border:1px solid #e2e8f0; border-radius:14px; padding:18px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                  <span class="unit-tag" style="font-weight:700; color:var(--primary); font-size:0.8rem;">${lesson.Unit || 'Lesson'}</span>
+                  <span style="font-size:0.75rem; background:#1e6b37; color:#fff; padding:2px 8px; border-radius:10px; font-weight:600;">${gradeBadge}</span>
+                </div>
+                <h3 style="color:var(--primary); font-size:1.1rem; margin-bottom:8px; line-height:1.3;">${lesson.Title}</h3>
+                <p style="color:#555; font-size:13.5px; margin:4px 0;"><strong>Role:</strong> ${lesson.Role}</p>
+                <p style="color:#888; font-size:13px; margin-bottom:14px;">Difficulty: ${lesson.Difficulty || '★★☆'}</p>
+                <button class="btn" style="width:100%; padding:10px 16px; border-radius:25px;" onclick="startLesson('${lesson.Title} (${lesson.Role})', '${(lesson.Prompt || '').replace(/'/g, "\\'")}')">Open Lesson</button>
               </div>
             `;
           });
+
+          sectionHTML += `</div>`; // Đóng Grid
+          section.innerHTML = sectionHTML;
+
+          // Chèn các bảng riêng lẻ này vào Màn hình Chọn Bài Học
+          dashScreen.appendChild(section);
         }
       });
-
-      grid.innerHTML = html || '<p style="color:#666;">Không tìm thấy bài học phù hợp.</p>';
     }
     
     async function login() {
