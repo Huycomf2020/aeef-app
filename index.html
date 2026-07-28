@@ -420,7 +420,10 @@ function renderLessonsGrid(lessons) {
           section.style.borderRadius = '16px';
           section.style.boxShadow = '0 4px 15px rgba(0,0,0,0.04)';
 
-          // Title header riêng cho từng bảng
+          // Thêm tham số lesson.FocusKnowledge vào onclick:
+onclick="startLesson('${lesson.Title} (${lesson.Role})', '${(lesson.Prompt || '').replace(/'/g, "\\'")}', '${(lesson.FocusKnowledge || '').replace(/'/g, "\\'")}')"
+          
+        // Title header riêng cho từng bảng
           let sectionHTML = `
             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid var(--primary); padding-bottom:10px; margin-bottom:18px;">
               <h3 style="color:var(--primary); font-size:1.25rem; font-weight:700; margin:0;">${cat.title}</h3>
@@ -520,10 +523,13 @@ function renderLessonsGrid(lessons) {
       `).join('');
     }
 
-    async function startLesson(topic, customPrompt) {
-      currentTopic = topic;
-      currentCustomPrompt = customPrompt;
-      chatHistory = [];
+    let currentFocusKnowledge = '';
+
+    async function startLesson(topic, customPrompt, focusKnowledge) {
+  currentTopic = topic;
+  currentCustomPrompt = customPrompt;
+  currentFocusKnowledge = focusKnowledge || '';
+  chatHistory = [];
       document.getElementById('chatMessages').innerHTML = '';
       document.getElementById('currentTopicTitle').innerText = topic;
 
@@ -653,7 +659,8 @@ function renderLessonsGrid(lessons) {
             topic: currentTopic,
             userMessage: text,
             chatHistory: chatHistory,
-            systemPrompt: currentCustomPrompt
+            systemPrompt: currentCustomPrompt,
+            focusKnowledge: currentFocusKnowledge
           })
         });
 
