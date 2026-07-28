@@ -254,78 +254,80 @@
       </div>
     </div>
 
-    <!-- KHUNG IN MẪU PHIẾU BÁO CÁO PDF (ẨN NỀN) -->
-    <div id="pdfPrintContainer" style="position:absolute; left:-9999px; top:-9999px;">
-      <div id="pdfContent" style="width:700px; padding:35px; background:#fff; font-family:'Plus Jakarta Sans', sans-serif; border:2px solid #1e6b37; border-radius:12px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #1e6b37; padding-bottom:15px; margin-bottom:20px;">
+<!-- KHUNG IN MẪU PHIẾU BÁO CÁO PDF (ĐÃ TỐI ƯU CẤU TRÚC A4) -->
+    <div id="pdfPrintContainer" style="position:fixed; left:-9999px; top:0; width:100%;">
+      <div id="pdfContent" style="width:750px; min-height:1000px; padding:30px; background:#fff; font-family:'Plus Jakarta Sans', sans-serif; border:2px solid #1e6b37; border-radius:12px; box-sizing:border-box;">
+        
+        <!-- HEADER -->
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #1e6b37; padding-bottom:12px; margin-bottom:15px;">
           <div>
-            <h1 style="color:#1e6b37; font-size:22px; text-transform:uppercase;">TRƯỜNG THPT LỘC NINH - ĐỒNG NAI</h1>
-            <p style="font-size:12px; color:#555;">PHIẾU BÁO CÁO KẾT QUẢ LUYỆN NÓI TIẾNG ANH AI (AEEF)</p>
+            <h1 style="color:#1e6b37; font-size:20px; margin:0; text-transform:uppercase; font-weight:800;">TRƯỜNG THPT LỘC NINH – ĐỒNG NAI</h1>
+            <p style="font-size:12px; color:#555; margin:3px 0 0 0; font-weight:600;">PHIẾU BÁO CÁO KẾT QUẢ LUYỆN NÓI TIẾNG ANH AI (AEEF)</p>
           </div>
           <div style="text-align:right;">
-            <p style="font-size:12px; font-weight:bold; color:#1e6b37;" id="pdfDate">Ngày: --/--/----</p>
-            <p style="font-size:11px; color:#777;">Hệ thống AI Assessment</p>
+            <p style="font-size:11px; font-weight:bold; color:#1e6b37; margin:0;" id="pdfDate">Ngày: --/--/----</p>
+            <p style="font-size:10px; color:#777; margin:2px 0 0 0;">Hệ thống AI Assessment</p>
           </div>
         </div>
 
-        <div style="background:#f8fafc; padding:15px; border-radius:8px; margin-bottom:20px;">
-          <p style="font-size:14px; margin-bottom:5px;"><strong>Mã Học Sinh (StudentID):</strong> <span id="pdfStudentId" style="color:#1e6b37; font-weight:bold;">S001</span></p>
-          <p style="font-size:14px;"><strong>Bài luyện tập (Lesson):</strong> <span id="pdfLesson">Travel</span></p>
+        <!-- THÔNG TIN HỌC SINH -->
+        <div style="background:#f8fafc; padding:12px 15px; border-radius:8px; margin-bottom:15px; border:1px solid #e2e8f0;">
+          <p style="font-size:13px; margin:0 0 4px 0;"><strong>Mã Học Sinh (StudentID):</strong> <span id="pdfStudentId" style="color:#1e6b37; font-weight:bold;">S001</span></p>
+          <p style="font-size:13px; margin:0;"><strong>Bài luyện tập (Lesson):</strong> <span id="pdfLesson" style="color:#334155; font-weight:600;">Travel</span></p>
         </div>
 
-        <div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:15px; border-radius:10px; text-align:center; margin-bottom:20px;">
-          <span style="font-size:12px; color:#1e6b37; font-weight:bold; text-transform:uppercase;">Trình độ quy chiếu VSTEP</span>
-          <div style="font-size:24px; font-weight:800; color:#1e6b37; margin:4px 0;" id="pdfVstep">Bậc 2 (A2)</div>
-          <p style="font-size:13px; color:#444;">Điểm trung bình (Overall Score): <strong id="pdfOverall">7.5</strong> / 10</p>
+        <!-- TỔNG QUAN VSTEP -->
+        <div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:12px; border-radius:10px; text-align:center; margin-bottom:15px;">
+          <span style="font-size:11px; color:#1e6b37; font-weight:bold; text-transform:uppercase; letter-spacing:0.5px;">Trình độ quy chiếu VSTEP</span>
+          <div style="font-size:22px; font-weight:800; color:#1e6b37; margin:2px 0;" id="pdfVstep">Bậc 2 (A2)</div>
+          <p style="font-size:12px; color:#444; margin:0;">Điểm trung bình (Overall Score): <strong id="pdfOverall" style="color:#1e6b37; font-size:14px;">7.5</strong> / 10</p>
         </div>
 
-        <h3 style="color:#1e6b37; font-size:15px; margin-bottom:10px;">📊 CHẤM ĐIỂM CHI TIẾT 5 TIÊU CHÍ:</h3>
-        <table style="width:100%; border-collapse:collapse; margin-bottom:20px; font-size:13px;">
+        <!-- BẢNG ĐIỂM CHI TIẾT -->
+        <h3 style="color:#1e6b37; font-size:14px; margin:0 0 8px 0; font-weight:700;">📊 CHẤM ĐIỂM CHI TIẾT 5 TIÊU CHÍ:</h3>
+        <table style="width:100%; border-collapse:collapse; margin-bottom:15px; font-size:12px;">
           <thead>
-            <tr style="background:#e2e8f0; color:#1e293b;">
-              <th style="padding:8px; border:1px solid #cbd5e1;">Phát âm</th>
-              <th style="padding:8px; border:1px solid #cbd5e1;">Ngữ pháp</th>
-              <th style="padding:8px; border:1px solid #cbd5e1;">Từ vựng</th>
-              <th style="padding:8px; border:1px solid #cbd5e1;">Trôi chảy</th>
-              <th style="padding:8px; border:1px solid #cbd5e1;">Tương tác</th>
+            <tr style="background:#e2e8f0; color:#1e293b; font-weight:bold;">
+              <th style="padding:8px; border:1px solid #cbd5e1; text-align:center;">Phát âm</th>
+              <th style="padding:8px; border:1px solid #cbd5e1; text-align:center;">Ngữ pháp</th>
+              <th style="padding:8px; border:1px solid #cbd5e1; text-align:center;">Từ vựng</th>
+              <th style="padding:8px; border:1px solid #cbd5e1; text-align:center;">Trôi chảy</th>
+              <th style="padding:8px; border:1px solid #cbd5e1; text-align:center;">Tương tác</th>
             </tr>
           </thead>
           <tbody>
-            <tr style="text-align:center; font-weight:bold; color:#1e6b37;">
-              <td style="padding:10px; border:1px solid #cbd5e1;" id="pdfPronun">8.0</td>
-              <td style="padding:10px; border:1px solid #cbd5e1;" id="pdfGrammar">7.5</td>
-              <td style="padding:10px; border:1px solid #cbd5e1;" id="pdfVocab">7.0</td>
-              <td style="padding:10px; border:1px solid #cbd5e1;" id="pdfFluency">7.5</td>
-              <td style="padding:10px; border:1px solid #cbd5e1;" id="pdfInteract">8.0</td>
+            <tr style="text-align:center; font-weight:bold; color:#1e6b37; background:#fff;">
+              <td style="padding:8px; border:1px solid #cbd5e1;" id="pdfPronun">8.0</td>
+              <td style="padding:8px; border:1px solid #cbd5e1;" id="pdfGrammar">7.5</td>
+              <td style="padding:8px; border:1px solid #cbd5e1;" id="pdfVocab">7.0</td>
+              <td style="padding:8px; border:1px solid #cbd5e1;" id="pdfFluency">7.5</td>
+              <td style="padding:8px; border:1px solid #cbd5e1;" id="pdfInteract">8.0</td>
             </tr>
           </tbody>
         </table>
 
-        <div style="font-size:13px; line-height:1.6; margin-bottom:25px;">
-          <p style="margin-bottom:8px;"><strong>💪 Điểm mạnh:</strong> <span id="pdfStrengths">...</span></p>
-          <p style="margin-bottom:8px;"><strong>⚠️ Cần cải thiện:</strong> <span id="pdfWeaknesses">...</span></p>
-          <p style="margin-bottom:8px;"><strong>🎯 Khuyến nghị bài học tiếp theo:</strong> <span id="pdfNextLesson">...</span></p>
+        <!-- NHẬN XÉT -->
+        <div style="font-size:12px; line-height:1.5; margin-bottom:20px; background:#fafafa; padding:12px; border-radius:8px; border:1px dashed #cbd5e1;">
+          <p style="margin:0 0 6px 0;"><strong>💪 Điểm mạnh:</strong> <span id="pdfStrengths">...</span></p>
+          <p style="margin:0 0 6px 0;"><strong>⚠️ Cần cải thiện:</strong> <span id="pdfWeaknesses">...</span></p>
+          <p style="margin:0;"><strong>🎯 Khuyến nghị bài học tiếp theo:</strong> <span id="pdfNextLesson">...</span></p>
         </div>
 
-        <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:30px; border-top:1px dashed #ccc; padding-top:15px;">
-          <div style="font-size:11px; color:#888;">
+        <!-- CHỮ KÝ -->
+        <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:20px; border-top:1px solid #e2e8f0; padding-top:12px;">
+          <div style="font-size:10px; color:#888;">
             AEEF System | Made by Huycomf
           </div>
           <div style="text-align:center;">
-            <p style="font-size:12px; font-weight:bold; color:#1e6b37;">XÁC NHẬN GIÁO VIÊN</p>
-            <div style="height:45px;"></div>
-            <p style="font-size:12px; font-style:italic;">(Đã ký & duyệt tự động)</p>
+            <p style="font-size:11px; font-weight:bold; color:#1e6b37; margin:0;">XÁC NHẬN GIÁO VIÊN</p>
+            <div style="height:35px;"></div>
+            <p style="font-size:10px; font-style:italic; margin:0; color:#666;">(Đã ký & duyệt tự động)</p>
           </div>
         </div>
+
       </div>
     </div>
-  </main>
-
-  <footer class="app-footer">
-    AEEF Classroom &copy; 2026 | Made by <a href="https://zalo.me/0907218089" target="_blank">Huycomf</a>
-  </footer>
-
-  <script>
+    <script>
     const GAS_URL = "https://script.google.com/macros/s/AKfycby8Z3CggKB5McWgP_65bS2hoYJkqOP3bzj_Ux2USG9Ker1AU1QhLow59PJQynb78rrX/exec";
 
     let currentStudent = '';
@@ -811,11 +813,12 @@
       `).join('');
     }
 
-    /* ----------- HÀM XUẤT PHIẾU BÁO CÁO PDF ----------- */
+ /* ----------- HÀM XUẤT PHIẾU BÁO CÁO PDF (ĐÃ SỬA LỖI TRÀN MÀN HÌNH & THIẾU DỮ LIỆU) ----------- */
     function generatePDFReport(index) {
       const item = rawScoresData[index];
       if (!item) return alert("Không tìm thấy dữ liệu học sinh!");
 
+      // 1. Đổ dữ liệu vào các thẻ HTML
       document.getElementById('pdfStudentId').innerText = item.StudentID || 'N/A';
       document.getElementById('pdfLesson').innerText = item.LessonID || 'General Speaking Practice';
       document.getElementById('pdfVstep').innerText = item.VSTEP || 'Bậc 2 (A2)';
@@ -831,20 +834,37 @@
       document.getElementById('pdfWeaknesses').innerText = item.Weaknesses || 'Cần chú ý chia động từ và phát âm đuôi rõ ràng hơn.';
       document.getElementById('pdfNextLesson').innerText = item.NextLesson || 'Tiếp tục thực hành các câu hỏi phản xạ tốc độ cao.';
       
-      document.getElementById('pdfDate').innerText = 'Ngày: ' + (item.Timestamp ? item.Timestamp.split(' ')[0] : new Date().toLocaleDateString('vi-VN'));
+      document.getElementById('pdfDate').innerText = 'Ngày: ' + (item.Timestamp ? String(item.Timestamp).split(' ')[0] : new Date().toLocaleDateString('vi-VN'));
 
+      const container = document.getElementById('pdfPrintContainer');
       const element = document.getElementById('pdfContent');
-      const opt = {
-        margin:       10,
-        filename:     `Phieu_Bao_Cao_${item.StudentID}_${new Date().toISOString().slice(0,10)}.pdf`,
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2 },
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-      };
 
-      html2pdf().set(opt).from(element).save();
+      // 2. Tạm thời đưa khung PDF vào vùng hiển thị hợp lệ để html2canvas tính đúng chiều cao
+      container.style.position = 'fixed';
+      container.style.left = '0';
+      container.style.top = '0';
+      container.style.zIndex = '-9999';
+      container.style.opacity = '1';
+
+      // 3. Đợi 200ms cho DOM render xong trọn vẹn chữ và bảng điểm rồi mới xuất PDF
+      setTimeout(function() {
+        const opt = {
+          margin:       5,
+          filename:     `Phieu_Bao_Cao_${item.StudentID}_${new Date().toISOString().slice(0,10)}.pdf`,
+          image:        { type: 'jpeg', quality: 0.98 },
+          html2canvas:  { scale: 2, useCORS: true, logging: false },
+          jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        html2pdf().set(opt).from(element).save().then(function() {
+          // Xuất xong thì ẩn khung lại như cũ
+          container.style.position = 'absolute';
+          container.style.left = '-9999px';
+          container.style.top = '-9999px';
+        });
+      }, 200);
     }
-
+      
     function exportScoresToCSV() {
       if (!rawScoresData || rawScoresData.length === 0) return alert("Không có dữ liệu để xuất!");
 
