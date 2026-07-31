@@ -852,7 +852,7 @@
       }).join('');
     }
 
-    /* ----------- HÀM XUẤT PHIẾU BÁO CÁO PDF ĐÃ SỬA CHUẨN XÁC ----------- */
+   /* ----------- HÀM XUẤT PHIẾU BÁO CÁO PDF DỨT ĐIỂM LỖI CẮT NGANG ----------- */
     function generatePDFReport(index) {
       const item = rawScoresData[index];
       if (!item) return alert("Không tìm thấy dữ liệu học sinh!");
@@ -871,6 +871,7 @@
       const nextLesson = item.nextLesson || item.NextLesson || 'Tiếp tục thực hành các câu hỏi phản xạ tốc độ cao.';
       const timestamp = item.timestamp || item.Timestamp || '';
 
+      // 1. Đổ dữ liệu vào DOM
       document.getElementById('pdfStudentId').innerText = sid;
       document.getElementById('pdfLesson').innerText = lesson;
       document.getElementById('pdfVstep').innerText = vstep;
@@ -891,36 +892,51 @@
       const container = document.getElementById('pdfPrintContainer');
       const element = document.getElementById('pdfContent');
 
+      // 2. Đưa khung PDF lên vị trí hợp lệ tuyệt đối để chụp chuẩn 100%
+      container.style.position = 'absolute';
       container.style.top = '0px';
       container.style.left = '0px';
       container.style.opacity = '1';
-      container.style.zIndex = '99999';
+      container.style.zIndex = '999999';
       container.style.background = '#ffffff';
+      container.style.pointerEvents = 'auto';
 
       setTimeout(function() {
         const opt = {
-          margin:       5,
+          margin:       0,
           filename:     `Phieu_Bao_Cao_${sid}_${new Date().toISOString().slice(0,10)}.pdf`,
           image:        { type: 'jpeg', quality: 0.98 },
-          html2canvas:  { scale: 2, useCORS: true, logging: false },
+          html2canvas:  { 
+            scale: 2, 
+            useCORS: true, 
+            logging: false,
+            scrollY: 0,
+            scrollX: 0,
+            windowWidth: 1000
+          },
           jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
         html2pdf().set(opt).from(element).save().then(function() {
+          // 3. Trả container về ẩn như cũ
+          container.style.position = 'fixed';
           container.style.top = '-9999px';
           container.style.left = '-9999px';
           container.style.opacity = '0';
           container.style.zIndex = '-1';
+          container.style.pointerEvents = 'none';
         }).catch(function(err) {
           console.error("Lỗi PDF:", err);
+          container.style.position = 'fixed';
           container.style.top = '-9999px';
           container.style.left = '-9999px';
           container.style.opacity = '0';
           container.style.zIndex = '-1';
+          container.style.pointerEvents = 'none';
         });
-      }, 300);
+      }, 350);
     }
-      
+    
     function exportScoresToCSV() {
       if (!rawScoresData || rawScoresData.length === 0) return alert("Không có dữ liệu để xuất!");
 
