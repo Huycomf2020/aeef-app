@@ -892,7 +892,11 @@
       const container = document.getElementById('pdfPrintContainer');
       const element = document.getElementById('pdfContent');
 
-      // 2. Đưa khung PDF lên vị trí hợp lệ tuyệt đối để chụp chuẩn 100%
+      // 2. Chỉnh lại kích thước thẻ PDF để co vừa trang A4
+      element.style.width = '700px'; 
+      element.style.boxSizing = 'border-box';
+      
+      // 3. Đưa khung PDF lên vị trí hợp lệ tuyệt đối để chụp chuẩn 100%
       container.style.position = 'absolute';
       container.style.top = '0px';
       container.style.left = '0px';
@@ -903,7 +907,7 @@
 
       setTimeout(function() {
         const opt = {
-          margin:       0,
+          margin:       8,
           filename:     `Phieu_Bao_Cao_${sid}_${new Date().toISOString().slice(0,10)}.pdf`,
           image:        { type: 'jpeg', quality: 0.98 },
           html2canvas:  { 
@@ -918,7 +922,7 @@
         };
 
         html2pdf().set(opt).from(element).save().then(function() {
-          // 3. Trả container về ẩn như cũ
+          // 4. Trả container về ẩn như cũ
           container.style.position = 'fixed';
           container.style.top = '-9999px';
           container.style.left = '-9999px';
@@ -934,7 +938,7 @@
           container.style.zIndex = '-1';
           container.style.pointerEvents = 'none';
         });
-      }, 350);
+      }, 300);
     }
     
     function exportScoresToCSV() {
