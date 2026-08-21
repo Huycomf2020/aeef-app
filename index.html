@@ -639,6 +639,9 @@
 
       showStatus("🤔 AI is thinking...");
 
+      // Lấy Key cá nhân dưới thiết bị học sinh (nếu có)
+      const userCustomKey = localStorage.getItem('USER_GEMINI_KEY') || '';
+
       try {
         const response = await fetch(GAS_URL, {
           method: 'POST',
@@ -650,7 +653,8 @@
             userMessage: text,
             chatHistory: chatHistory,
             systemPrompt: currentCustomPrompt,
-            focusKnowledge: currentFocusKnowledge
+            focusKnowledge: currentFocusKnowledge,
+            userApiKey: userCustomKey
           })
         });
 
@@ -1056,31 +1060,15 @@
       document.getElementById('apiKeyModal').style.display = 'none';
     }
 
-    async function saveApiKey() {
+    function saveApiKey() {
       const key = document.getElementById('apiKeyInput').value.trim();
       if (!key) return alert("Vui lòng dán mã API Key!");
 
-      try {
-        const response = await fetch(GAS_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({
-            action: 'saveApiKey',
-            apiKey: key
-          })
-        });
-
-        const res = await response.json();
-        if (res.success) {
-          alert("Đã cập nhật API Key mới thành công!");
-          document.getElementById('apiKeyInput').value = '';
-          closeKeyModal();
-        } else {
-          alert("Lỗi: " + res.error);
-        }
-      } catch (e) {
-        alert("Không thể lưu Key: " + e.message);
-      }
+      // Lưu trực tiếp vào bộ nhớ trình duyệt riêng của máy này (localStorage)
+      localStorage.setItem('USER_GEMINI_KEY', key);
+      alert("Đã lưu API Key riêng cho thiết bị này thành công!");
+      document.getElementById('apiKeyInput').value = '';
+      closeKeyModal();
     }
   </script>
 </body>
