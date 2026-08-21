@@ -1,10 +1,9 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
+<!doctype html>
+<html lang="vi"><head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AEEF - AI English Speaking Companion</title>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
   <!-- Thư viện html2pdf.js để xuất file PDF đẹp mắt -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
@@ -73,6 +72,45 @@
 
     .app-footer { text-align: center; padding: 18px; background: #fff; border-top: 1px solid #e2e8f0; font-size: 0.9rem; color: #64748b; margin-top: auto; }
     .app-footer a { color: var(--primary); font-weight: 700; text-decoration: none; }
+
+    .header-actions { display:flex; align-items:center; gap:12px; }
+    .lesson-toolbar { display:flex; gap:10px; align-items:center; margin-bottom:20px; flex-wrap:wrap; }
+    .lesson-toolbar input, .lesson-toolbar select { padding:11px 14px; border:1px solid #cbd5e1; border-radius:10px; background:#fff; font:inherit; }
+    .lesson-toolbar input { flex:1; min-width:220px; }
+    .key-status { font-size:11px; display:block; opacity:.85; margin-top:2px; }
+    .assistant-toggle { position:fixed; right:22px; bottom:22px; z-index:9997; box-shadow:0 8px 24px rgba(0,0,0,.2); }
+    .assistant-panel { display:none; position:fixed; right:22px; bottom:82px; width:min(380px, calc(100vw - 28px)); height:min(560px, calc(100vh - 120px)); background:#fff; border:1px solid #dbe5df; border-radius:18px; z-index:9998; box-shadow:0 18px 50px rgba(15,45,28,.22); overflow:hidden; flex-direction:column; }
+    .assistant-panel.open { display:flex; }
+    .assistant-head { padding:15px 18px; background:var(--primary); color:#fff; display:flex; justify-content:space-between; align-items:center; }
+    .assistant-messages { flex:1; overflow:auto; padding:16px; display:flex; flex-direction:column; gap:10px; }
+    .assistant-message { padding:10px 13px; border-radius:14px; line-height:1.45; white-space:pre-wrap; font-size:14px; }
+    .assistant-message.ai { background:#eef6f0; align-self:flex-start; }
+    .assistant-message.user { background:var(--primary); color:#fff; align-self:flex-end; }
+    .assistant-controls { display:flex; gap:8px; padding:12px; border-top:1px solid #e2e8f0; }
+    .assistant-controls textarea { flex:1; resize:none; min-height:44px; max-height:100px; padding:10px 12px; border:1px solid #cbd5e1; border-radius:12px; font:inherit; }
+
+    @media (max-width: 768px) {
+      .app-header { padding:10px 14px; align-items:flex-start; gap:10px; }
+      .brand-logo { gap:8px; }
+      .logo { width:34px; height:34px; font-size:17px; flex:0 0 auto; }
+      .brand-logo h1 { font-size:16px !important; }
+      .header-actions { gap:6px; flex-wrap:wrap; justify-content:flex-end; }
+      .header-actions .btn { padding:7px 9px !important; font-size:0.74rem !important; }
+      .main-container { margin:18px auto; padding:0 14px; overflow:hidden; }
+      .card { padding:17px; border-radius:14px; }
+      .meeting-layout { grid-template-columns:minmax(0,1fr); }
+      .video-wrapper { height:200px; }
+      .chat-box { height:460px; min-width:0; }
+      .chat-controls { gap:7px; }
+      .chat-controls input { min-width:0; padding:11px 13px; }
+      .chat-controls .btn { padding:11px 15px; }
+      .leaderboard-card { padding:15px; }
+      .lb-item { align-items:flex-start; gap:8px; flex-direction:column; }
+      #chatScreen > div:first-child { align-items:flex-start !important; gap:10px; }
+      #finishBtn { max-width:190px; white-space:normal; padding:10px 14px; }
+      .assistant-toggle { right:14px; bottom:14px; }
+      .assistant-panel { right:14px; bottom:72px; }
+    }
   </style>
 </head>
 <body>
@@ -82,10 +120,10 @@
       <div class="logo">A</div>
       <h1 style="color:var(--primary);font-size:20px;">AEEF Classroom</h1>
     </div>
-    <div style="display:flex; align-items:center; gap:12px;">
+    <div class="header-actions">
       <button class="btn btn-outline" id="btnTeacherToggle" onclick="toggleTeacherDashboard()" style="padding: 6px 14px; font-size: 0.85rem; border-radius:6px;">👨‍🏫 Teacher Dashboard</button>
       <div style="font-weight:600;">👤 <span id="studentDisplay">Guest</span></div>
-      <button class="btn" onclick="openKeyModal()" style="padding: 6px 12px; font-size: 0.85rem; background:#2e7d32; color:#fff; border:none; border-radius:6px; cursor:pointer;">🔑 Đổi API Key</button>
+      <button class="btn" onclick="openKeyModal()" style="padding: 6px 12px; font-size: 0.85rem; background:#2e7d32; color:#fff; border:none; border-radius:6px; cursor:pointer;">🔑 API Key<span id="keyStatus" class="key-status">Đang dùng khóa chung</span></button>
     </div>
   </header>
 
@@ -93,7 +131,7 @@
     <!-- Màn hình Đăng nhập Học sinh -->
     <section id="loginScreen" class="card" style="max-width:400px;margin:50px auto;text-align:center;">
       <h2 style="color:var(--primary);margin-bottom:15px;">Welcome</h2>
-      <input type="text" id="studentId" placeholder="Enter Student ID (e.g. S001)" style="width:100%;padding:12px;border-radius:10px;border:1px solid #ccc;margin-bottom:15px;" />
+      <input type="text" id="studentId" placeholder="Enter Student ID (e.g. S001)" style="width:100%;padding:12px;border-radius:10px;border:1px solid #ccc;margin-bottom:15px;">
       <button class="btn" style="width:100%;" onclick="login()">Start Practice</button>
     </section>
 
@@ -106,8 +144,18 @@
         </div>
       </div>
 
-      <h2 style="color:var(--primary);margin-bottom:20px;">Choose a Lesson</h2>
-      <div id="lessonsGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:15px;">
+      <h2 style="color:var(--primary);margin-bottom:12px;">Chọn bài luyện nói</h2>
+      <div class="lesson-toolbar" aria-label="Bộ lọc bài học">
+        <input id="lessonSearch" type="search" placeholder="Tìm theo tên bài hoặc chủ đề..." oninput="applyLessonFilters()">
+        <select id="gradeFilter" onchange="applyLessonFilters()" aria-label="Lọc theo lớp">
+          <option value="all">Tất cả các lớp</option>
+          <option value="10">Lớp 10</option>
+          <option value="11">Lớp 11</option>
+          <option value="12">Lớp 12</option>
+          <option value="other">Mở rộng</option>
+        </select>
+      </div>
+      <div id="lessonsGrid" style="display: none; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 15px;">
         <p style="color:#666;">⏳ Loading lessons from Google Sheets...</p>
       </div>
     </section>
@@ -116,13 +164,13 @@
     <section id="chatScreen" style="display:none;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
         <h3 style="color:var(--primary);" id="currentTopicTitle">Lesson Practice</h3>
-        <button class="btn btn-danger" onclick="finishAndEvaluate()">📊 Finish & Get AI Assessment</button>
+        <button id="finishBtn" class="btn btn-danger" onclick="finishAndEvaluate()">📊 Kết thúc &amp; nhận đánh giá AI</button>
       </div>
 
       <div class="meeting-layout">
         <div class="card" style="padding:10px;background:#111;">
           <div class="video-wrapper">
-            <video id="userVideo" autoplay playsinline muted></video>
+            <video id="userVideo" autoplay="" playsinline="" muted=""></video>
             <div class="video-overlay">🔴 Live Video</div>
           </div>
         </div>
@@ -131,7 +179,7 @@
           <div id="chatMessages" class="chat-messages"></div>
           <div class="chat-controls">
             <button id="micBtn" class="mic-btn" onclick="toggleMic()">🎤</button>
-            <input type="text" id="chatInput" placeholder="Type or speak English..." onkeypress="if(event.key==='Enter') sendMsg()" />
+            <input type="text" id="chatInput" placeholder="Type or speak English..." onkeypress="if(event.key==='Enter') sendMsg()">
             <button class="btn" onclick="sendMsg()">Send</button>
           </div>
         </div>
@@ -143,7 +191,7 @@
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
         <div>
           <h2 style="color:var(--primary);">👨‍🏫 Teacher Analytics Dashboard</h2>
-          <p style="font-size:14px; color:#666;">Thống kê thời lượng luyện nói, tần suất tương tác & báo cáo VSTEP thực tế</p>
+          <p style="font-size:14px; color:#666;">Thống kê thời lượng luyện nói, tần suất tương tác &amp; báo cáo VSTEP thực tế</p>
         </div>
         <button class="btn" style="background:#0284c7;" onclick="exportScoresToCSV()">📥 Xuất Báo Cáo Excel/CSV</button>
       </div>
@@ -232,8 +280,8 @@
     <!-- Modal nhập API Key -->
     <div id="apiKeyModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.6); z-index:99999; align-items:center; justify-content:center;">
       <div style="background:#fff; padding:30px; border-radius:18px; max-width:420px; width:90%; box-shadow:0 10px 25px rgba(0,0,0,0.2); text-align:center;">
-        <h3 style="margin-bottom:12px; color:#1e6b37;">Kích hoạt Gemini API Key 🔑</h3>
-        <p style="font-size:14px; color:#666; margin-bottom:16px;">Vui lòng nhập API Key để bắt đầu sử dụng AEEF.</p>
+        <h3 style="margin-bottom:12px; color:#1e6b37;">Khóa Gemini cá nhân 🔑</h3>
+        <p style="font-size:14px; color:#666; margin-bottom:16px;">AEEF mặc định dùng quota chung của giáo viên. Bạn có thể lưu khóa riêng trên thiết bị này; khóa không làm thay đổi trải nghiệm của người khác.</p>
         
         <input type="password" id="apiKeyInput" placeholder="Dán mã API Key (AIzaSy...)" style="width:100%; padding:12px; border:1px solid #ccc; border-radius:8px; font-size:14px; outline:none; margin-bottom:12px; box-sizing:border-box;">
         
@@ -243,8 +291,10 @@
           </a>
         </div>
 
-        <div style="display:flex; gap:10px;">
+        <p id="keyModalStatus" style="font-size:13px; margin-bottom:14px; color:#475569;"></p>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
           <button onclick="closeKeyModal()" style="flex:1; padding:12px; border:1px solid #ccc; background:#f5f5f5; border-radius:25px; cursor:pointer;">Hủy</button>
+          <button id="removeKeyBtn" onclick="removeApiKey()" style="display:none; flex:1; padding:12px; border:1px solid #dc3545; color:#b4232f; background:#fff; border-radius:25px; cursor:pointer;">Dùng khóa chung</button>
           <button onclick="saveApiKey()" style="flex:1; background:#1e6b37; color:#fff; padding:12px; border:none; border-radius:25px; font-weight:bold; cursor:pointer;">Lưu Key</button>
         </div>
       </div>
@@ -317,7 +367,7 @@
           <div style="text-align:center;">
             <p style="font-size:11px; font-weight:bold; color:#1e6b37; margin:0;">XÁC NHẬN GIÁO VIÊN</p>
             <div style="height:35px;"></div>
-            <p style="font-size:10px; font-style:italic; margin:0; color:#666;">(Đã ký & duyệt tự động)</p>
+            <p style="font-size:10px; font-style:italic; margin:0; color:#666;">(Đã ký &amp; duyệt tự động)</p>
           </div>
         </div>
 
@@ -325,8 +375,23 @@
     </div>
   </main>
 
+  <button class="btn assistant-toggle" onclick="toggleAssistant()" aria-label="Mở trợ lý AI">✨ Trợ lý AI</button>
+  <aside id="assistantPanel" class="assistant-panel" aria-label="Trợ lý học tập AI">
+    <div class="assistant-head">
+      <div><strong>✨ AEEF Assistant</strong><div style="font-size:12px;opacity:.85;">Hỏi bài, luyện câu và nhận gợi ý</div></div>
+      <button onclick="toggleAssistant(false)" aria-label="Đóng trợ lý" style="border:0;background:transparent;color:#fff;font-size:22px;cursor:pointer;">×</button>
+    </div>
+    <div id="assistantMessages" class="assistant-messages">
+      <div class="assistant-message ai">Xin chào! Mình có thể giải thích từ vựng, gợi ý câu trả lời hoặc giúp bạn luyện bài hiện tại.</div>
+    </div>
+    <div class="assistant-controls">
+      <textarea id="assistantInput" placeholder="Ví dụ: Gợi ý 3 câu về Family life" onkeydown="assistantKeydown(event)"></textarea>
+      <button class="btn" id="assistantSendBtn" onclick="sendAssistantMessage()">Gửi</button>
+    </div>
+  </aside>
+
   <footer class="app-footer">
-    AEEF Classroom &copy; 2026 | Made by <a href="https://zalo.me/0907218089" target="_blank">Huycomf</a>
+    AEEF Classroom © 2026 | Made by <a href="https://zalo.me/0907218089" target="_blank">Huycomf</a>
   </footer>
 
   <script>
@@ -345,6 +410,7 @@
     let rawScoresData = [];
 
     window.onload = function() {
+      updateKeyStatus();
       fetchAppInitData();
     };
 
@@ -410,6 +476,7 @@
         if (groupLessons.length > 0) {
           const section = document.createElement('div');
           section.className = 'grade-section card';
+          section.dataset.grade = cat.key === 'Khác' ? 'other' : cat.key;
           section.style.marginBottom = '30px';
           section.style.background = '#ffffff';
           section.style.padding = '20px';
@@ -430,7 +497,7 @@
             const safeFocus = (lesson.FocusKnowledge || '').replace(/'/g, "\\'");
 
             sectionHTML += `
-              <div class="card" style="margin-bottom:0; background:#f9fbf9; border:1px solid #e2e8f0; border-radius:14px; padding:18px;">
+              <div class="card lesson-card" data-search="${lesson.Title} ${lesson.Unit || ''} ${lesson.Role || ''}" style="margin-bottom:0; background:#f9fbf9; border:1px solid #e2e8f0; border-radius:14px; padding:18px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
                   <span class="unit-tag" style="font-weight:700; color:var(--primary); font-size:0.8rem;">${lesson.Unit || 'Lesson'}</span>
                   <span style="font-size:0.75rem; background:#1e6b37; color:#fff; padding:2px 8px; border-radius:10px; font-weight:600;">${gradeBadge}</span>
@@ -447,6 +514,22 @@
           section.innerHTML = sectionHTML;
           dashScreen.appendChild(section);
         }
+      });
+      applyLessonFilters();
+    }
+
+    function applyLessonFilters() {
+      const query = (document.getElementById('lessonSearch')?.value || '').trim().toLocaleLowerCase('vi');
+      const grade = document.getElementById('gradeFilter')?.value || 'all';
+      document.querySelectorAll('.grade-section').forEach(section => {
+        const gradeMatch = grade === 'all' || section.dataset.grade === grade;
+        let visibleCards = 0;
+        section.querySelectorAll('.lesson-card').forEach(card => {
+          const queryMatch = !query || (card.dataset.search || card.innerText).toLocaleLowerCase('vi').includes(query);
+          card.style.display = gradeMatch && queryMatch ? '' : 'none';
+          if (gradeMatch && queryMatch) visibleCards++;
+        });
+        section.style.display = gradeMatch && visibleCards ? '' : 'none';
       });
     }
     
@@ -1053,6 +1136,11 @@
     }
 
     function openKeyModal() {
+      const hasPersonalKey = Boolean(localStorage.getItem('USER_GEMINI_KEY'));
+      document.getElementById('keyModalStatus').innerText = hasPersonalKey
+        ? 'Thiết bị này đang dùng khóa cá nhân.'
+        : 'Thiết bị này đang dùng quota chung của giáo viên.';
+      document.getElementById('removeKeyBtn').style.display = hasPersonalKey ? 'block' : 'none';
       document.getElementById('apiKeyModal').style.display = 'flex';
     }
 
@@ -1066,10 +1154,85 @@
 
       // Lưu trực tiếp vào bộ nhớ trình duyệt riêng của máy này (localStorage)
       localStorage.setItem('USER_GEMINI_KEY', key);
-      alert("Đã lưu API Key riêng cho thiết bị này thành công!");
+      updateKeyStatus();
+      alert("Đã lưu API Key riêng cho thiết bị này. Những người dùng khác không bị ảnh hưởng.");
       document.getElementById('apiKeyInput').value = '';
       closeKeyModal();
     }
+
+    function removeApiKey() {
+      localStorage.removeItem('USER_GEMINI_KEY');
+      updateKeyStatus();
+      closeKeyModal();
+      alert('Thiết bị này đã quay lại sử dụng quota chung của giáo viên.');
+    }
+
+    function updateKeyStatus() {
+      const status = document.getElementById('keyStatus');
+      if (!status) return;
+      status.innerText = localStorage.getItem('USER_GEMINI_KEY')
+        ? 'Đang dùng khóa cá nhân'
+        : 'Đang dùng khóa chung';
+    }
+
+    function toggleAssistant(forceState) {
+      const panel = document.getElementById('assistantPanel');
+      const shouldOpen = typeof forceState === 'boolean' ? forceState : !panel.classList.contains('open');
+      panel.classList.toggle('open', shouldOpen);
+      if (shouldOpen) setTimeout(() => document.getElementById('assistantInput').focus(), 50);
+    }
+
+    function assistantKeydown(event) {
+      if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        sendAssistantMessage();
+      }
+    }
+
+    function appendAssistantMessage(role, text) {
+      const container = document.getElementById('assistantMessages');
+      const message = document.createElement('div');
+      message.className = `assistant-message ${role}`;
+      message.textContent = text;
+      container.appendChild(message);
+      container.scrollTop = container.scrollHeight;
+      return message;
+    }
+
+    async function sendAssistantMessage() {
+      const input = document.getElementById('assistantInput');
+      const button = document.getElementById('assistantSendBtn');
+      const message = input.value.trim();
+      if (!message || button.disabled) return;
+      appendAssistantMessage('user', message);
+      input.value = '';
+      button.disabled = true;
+      const waiting = appendAssistantMessage('ai', 'Đang suy nghĩ…');
+      try {
+        const response = await fetch(GAS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            action: 'assistantChat',
+            message,
+            context: {
+              topic: currentTopic || '',
+              focusKnowledge: currentFocusKnowledge || '',
+              recentConversation: chatHistory.slice(-6)
+            }
+          })
+        });
+        const result = await response.json();
+        waiting.textContent = result.success
+          ? result.reply
+          : `Không thể trả lời: ${result.error || 'Lỗi không xác định'}`;
+      } catch (error) {
+        waiting.textContent = 'Không thể kết nối trợ lý. Vui lòng thử lại.';
+      } finally {
+        button.disabled = false;
+      }
+    }
   </script>
-</body>
-</html>
+
+
+</body></html>
