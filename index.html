@@ -454,6 +454,7 @@ You are a warm, natural female English speaking coach having a real conversation
 - Put language correction in the structured recast field; keep the spoken reply conversational.
 `;
     let currentFocusKnowledge = '';
+    let currentDifficulty = '';
     let chatHistory = [];
     let recognition = null;
     let isListening = false;
@@ -559,7 +560,7 @@ You are a warm, natural female English speaking coach having a real conversation
                 <h3 style="color:var(--primary); font-size:1.1rem; margin-bottom:8px; line-height:1.3;">${lesson.Title}</h3>
                 <p style="color:#555; font-size:13.5px; margin:4px 0;"><strong>Role:</strong> ${lesson.Role}</p>
                 <p style="color:#888; font-size:13px; margin-bottom:14px;">Difficulty: ${lesson.Difficulty || '★★☆'}</p>
-                <button class="btn" style="width:100%; padding:10px 16px; border-radius:25px;" onclick="startLesson('${lesson.Title} (${lesson.Role})', '${safePrompt}', '${safeFocus}')">Open Lesson</button>
+                <button class="btn" style="width:100%; padding:10px 16px; border-radius:25px;" onclick="startLesson('${lesson.Title} (${lesson.Role})', '${safePrompt}', '${safeFocus}', '${lesson.Difficulty || ''}')">Open Lesson</button>
               </div>
             `;
           });
@@ -652,10 +653,11 @@ You are a warm, natural female English speaking coach having a real conversation
       `).join('');
     }
 
-    async function startLesson(topic, customPrompt, focusKnowledge) {
+    async function startLesson(topic, customPrompt, focusKnowledge, difficulty) {
       currentTopic = topic;
       currentCustomPrompt = customPrompt;
       currentFocusKnowledge = focusKnowledge || '';
+      currentDifficulty = difficulty || '';
       chatHistory = [];
       document.getElementById('chatMessages').innerHTML = '';
       document.getElementById('currentTopicTitle').innerText = topic;
@@ -865,6 +867,7 @@ You are a warm, natural female English speaking coach having a real conversation
             chatHistory: chatHistory,
             systemPrompt: `${currentCustomPrompt || ''}\n${NATURAL_CONVERSATION_PROMPT}`.trim(),
             focusKnowledge: currentFocusKnowledge,
+            difficulty: currentDifficulty,
             userApiKey: userCustomKey
           })
         });
@@ -1485,6 +1488,7 @@ You are a warm, natural female English speaking coach having a real conversation
             context: {
               topic: currentTopic || '',
               focusKnowledge: currentFocusKnowledge || '',
+              difficulty: currentDifficulty || '',
               recentConversation: chatHistory.slice(-6)
             }
           })
