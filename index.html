@@ -133,6 +133,7 @@
     <div class="header-actions">
       <button class="btn btn-outline" id="btnTeacherToggle" onclick="toggleTeacherDashboard()" style="padding: 6px 14px; font-size: 0.85rem; border-radius:6px;">👨‍🏫 Teacher Dashboard</button>
       <div style="font-weight:600;">👤 <span id="studentDisplay">Guest</span></div>
+      <button class="btn" onclick="openTeacherSetup()" style="padding:6px 12px;font-size:0.85rem;background:var(--primary);color:#fff;border:none;border-radius:6px;cursor:pointer;">⚙️ Teacher Setup<span id="backendStatus" class="key-status">Backend mặc định</span></button>
       <button class="btn" onclick="openKeyModal()" style="padding: 6px 12px; font-size: 0.85rem; background:#2e7d32; color:#fff; border:none; border-radius:6px; cursor:pointer;">🔑 API Key<span id="keyStatus" class="key-status">Đang dùng khóa chung</span></button>
     </div>
   </header>
@@ -310,6 +311,29 @@
       </div>
     </div>
 
+    <!-- Modal kết nối backend riêng của giáo viên -->
+    <div id="teacherSetupModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.6);z-index:100000;align-items:center;justify-content:center;">
+      <div style="background:#fff;padding:28px;border-radius:18px;max-width:520px;width:92%;box-shadow:0 10px 25px rgba(0,0,0,0.2);">
+        <h3 style="margin-bottom:8px;color:var(--primary);">⚙️ Teacher Setup</h3>
+        <p style="font-size:14px;color:#566273;line-height:1.55;margin-bottom:16px;">Dán URL Web App của Apps Script để kết nối AEEF với Google Sheet riêng của giáo viên. URL chỉ được lưu trên thiết bị này và không làm thay đổi người dùng khác.</p>
+
+        <label for="teacherGasUrl" style="display:block;text-align:left;font-size:13px;font-weight:700;color:#334155;margin-bottom:6px;">Apps Script Web App URL</label>
+        <input type="url" id="teacherGasUrl" placeholder="https://script.google.com/macros/s/.../exec" style="width:100%;padding:12px;border:1px solid #b9c4d0;border-radius:8px;font-size:14px;outline:none;box-sizing:border-box;">
+        <p style="font-size:12.5px;color:#64748b;margin:8px 0 14px;">Chỉ dùng URL triển khai kết thúc bằng <strong>/exec</strong>. Không dùng URL thử nghiệm <strong>/dev</strong>.</p>
+
+        <div id="teacherSetupStatus" style="display:none;font-size:13px;line-height:1.45;padding:10px 12px;border-radius:8px;margin-bottom:14px;"></div>
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:9px;padding:10px 12px;margin-bottom:16px;font-size:12.5px;line-height:1.5;color:#334155;">
+          <strong>Quy trình:</strong> Copy Google Sheet → Extensions → Apps Script → Deploy as Web App → Copy URL /exec → Dán vào đây.
+        </div>
+
+        <div style="display:flex;gap:9px;flex-wrap:wrap;">
+          <button onclick="closeTeacherSetup()" style="flex:1;padding:11px;border:1px solid #cbd5e1;background:#f8fafc;border-radius:24px;cursor:pointer;">Hủy</button>
+          <button id="resetBackendBtn" onclick="resetTeacherBackend()" style="display:none;flex:1;padding:11px;border:1px solid #dc3545;color:#b4232f;background:#fff;border-radius:24px;cursor:pointer;">Dùng backend mặc định</button>
+          <button id="saveBackendBtn" onclick="saveTeacherBackend()" style="flex:1.2;padding:11px;border:0;background:var(--primary);color:#fff;border-radius:24px;font-weight:700;cursor:pointer;">Kiểm tra &amp; Lưu</button>
+        </div>
+      </div>
+    </div>
+
     <!-- KHUNG IN MẪU PHIẾU BÁO CÁO PDF (ĐÃ TỐI ƯU HIỂN THỊ CHUẨN A4) -->
     <div id="pdfPrintContainer" style="position:fixed; top:-9999px; left:-9999px; opacity:0; pointer-events:none; z-index:-1;">
       <div id="pdfContent" style="width:750px; padding:30px; background:#fff; font-family:'Plus Jakarta Sans', sans-serif; border:2px solid #1e6b37; border-radius:12px; box-sizing:border-box;">
@@ -408,7 +432,12 @@
   </footer>
 
   <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycby8Z3CggKB5McWgP_65bS2hoYJkqOP3bzj_Ux2USG9Ker1AU1QhLow59PJQynb78rrX/exec";
+    const DEFAULT_GAS_URL = "https://script.google.com/macros/s/AKfycby8Z3CggKB5McWgP_65bS2hoYJkqOP3bzj_Ux2USG9Ker1AU1QhLow59PJQynb78rrX/exec";
+    const TEACHER_BACKEND_STORAGE_KEY = 'AEEF_TEACHER_GAS_URL';
+
+    function getGasUrl() {
+      return localStorage.getItem(TEACHER_BACKEND_STORAGE_KEY) || DEFAULT_GAS_URL;
+    }
 
     let currentStudent = '';
     let currentTopic = '';
@@ -435,6 +464,7 @@ You are a warm, natural female English speaking coach having a real conversation
 
     window.onload = function() {
       updateKeyStatus();
+      updateBackendStatus();
       fetchAppInitData();
     };
 
@@ -453,7 +483,7 @@ You are a warm, natural female English speaking coach having a real conversation
 
     async function fetchAppInitData() {
       try {
-        const res = await fetch(GAS_URL, {
+        const res = await fetch(getGasUrl(), {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify({ action: 'initApp' })
@@ -570,7 +600,7 @@ You are a warm, natural female English speaking coach having a real conversation
 
     async function fetchLeaderboardData() {
       try {
-        const res = await fetch(GAS_URL, {
+        const res = await fetch(getGasUrl(), {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify({ action: 'getTeacherDashboard' })
@@ -824,7 +854,7 @@ You are a warm, natural female English speaking coach having a real conversation
       const userCustomKey = localStorage.getItem('USER_GEMINI_KEY') || '';
 
       try {
-        const response = await fetch(GAS_URL, {
+        const response = await fetch(getGasUrl(), {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify({
@@ -879,7 +909,7 @@ You are a warm, natural female English speaking coach having a real conversation
       showStatus("⏳ AI đang phân tích bài nói và chấm điểm VSTEP...");
 
       try {
-        const response = await fetch(GAS_URL, {
+        const response = await fetch(getGasUrl(), {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify({
@@ -956,7 +986,7 @@ You are a warm, natural female English speaking coach having a real conversation
 
     async function fetchTeacherAnalytics() {
       try {
-        const res = await fetch(GAS_URL, {
+        const res = await fetch(getGasUrl(), {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify({ action: 'getTeacherDashboard' })
@@ -1233,6 +1263,106 @@ You are a warm, natural female English speaking coach having a real conversation
       container.scrollTop = container.scrollHeight;
     }
 
+    function openTeacherSetup() {
+      const customUrl = localStorage.getItem(TEACHER_BACKEND_STORAGE_KEY) || '';
+      document.getElementById('teacherGasUrl').value = customUrl;
+      document.getElementById('resetBackendBtn').style.display = customUrl ? 'block' : 'none';
+      const status = document.getElementById('teacherSetupStatus');
+      status.style.display = 'block';
+      status.style.background = customUrl ? '#ecfdf3' : '#f1f5f9';
+      status.style.color = customUrl ? '#166534' : '#475569';
+      status.innerText = customUrl
+        ? '✓ Thiết bị này đang kết nối với backend riêng của giáo viên.'
+        : 'Thiết bị này đang sử dụng backend mặc định của AEEF.';
+      document.getElementById('teacherSetupModal').style.display = 'flex';
+    }
+
+    function closeTeacherSetup() {
+      document.getElementById('teacherSetupModal').style.display = 'none';
+    }
+
+    function isValidAppsScriptUrl(value) {
+      try {
+        const url = new URL(value);
+        return url.protocol === 'https:' &&
+          url.hostname === 'script.google.com' &&
+          url.pathname.includes('/macros/s/') &&
+          url.pathname.endsWith('/exec');
+      } catch (_) {
+        return false;
+      }
+    }
+
+    async function saveTeacherBackend() {
+      const input = document.getElementById('teacherGasUrl');
+      const button = document.getElementById('saveBackendBtn');
+      const status = document.getElementById('teacherSetupStatus');
+      const url = input.value.trim();
+
+      status.style.display = 'block';
+      if (!isValidAppsScriptUrl(url)) {
+        status.style.background = '#fff1f2';
+        status.style.color = '#b4232f';
+        status.innerText = 'URL chưa hợp lệ. Hãy dùng URL Apps Script bắt đầu bằng https://script.google.com/macros/s/ và kết thúc bằng /exec.';
+        return;
+      }
+
+      button.disabled = true;
+      button.innerText = 'Đang kiểm tra...';
+      status.style.background = '#f0fdf4';
+      status.style.color = '#1e6b37';
+      status.innerText = 'Đang kết nối và kiểm tra dữ liệu bài học...';
+
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action: 'initApp' })
+        });
+        const result = await response.json();
+        if (!response.ok || !result.success || !Array.isArray(result.lessons)) {
+          throw new Error(result.error || 'Backend không trả về dữ liệu AEEF hợp lệ.');
+        }
+
+        localStorage.setItem(TEACHER_BACKEND_STORAGE_KEY, url);
+        updateBackendStatus();
+        status.style.background = '#ecfdf3';
+        status.style.color = '#166534';
+        status.innerText = `✓ Kết nối thành công. Đã tìm thấy ${result.lessons.length} bài học.`;
+        document.getElementById('resetBackendBtn').style.display = 'block';
+        await fetchAppInitData();
+        setTimeout(closeTeacherSetup, 900);
+      } catch (error) {
+        status.style.background = '#fff1f2';
+        status.style.color = '#b4232f';
+        status.innerText = 'Không thể kết nối: ' + error.message;
+      } finally {
+        button.disabled = false;
+        button.innerText = 'Kiểm tra & Lưu';
+      }
+    }
+
+    async function resetTeacherBackend() {
+      localStorage.removeItem(TEACHER_BACKEND_STORAGE_KEY);
+      updateBackendStatus();
+      document.getElementById('teacherGasUrl').value = '';
+      document.getElementById('resetBackendBtn').style.display = 'none';
+      const status = document.getElementById('teacherSetupStatus');
+      status.style.display = 'block';
+      status.style.background = '#f1f5f9';
+      status.style.color = '#475569';
+      status.innerText = 'Đã quay lại backend mặc định của AEEF.';
+      await fetchAppInitData();
+    }
+
+    function updateBackendStatus() {
+      const status = document.getElementById('backendStatus');
+      if (!status) return;
+      status.innerText = localStorage.getItem(TEACHER_BACKEND_STORAGE_KEY)
+        ? 'Backend riêng'
+        : 'Backend mặc định';
+    }
+
     function openKeyModal() {
       const hasPersonalKey = Boolean(localStorage.getItem('USER_GEMINI_KEY'));
       document.getElementById('keyModalStatus').innerText = hasPersonalKey
@@ -1346,7 +1476,7 @@ You are a warm, natural female English speaking coach having a real conversation
       animateTeacher('talk');
       const waiting = appendAssistantMessage('ai', 'Đang suy nghĩ…');
       try {
-        const response = await fetch(GAS_URL, {
+        const response = await fetch(getGasUrl(), {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify({
