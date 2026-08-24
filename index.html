@@ -413,6 +413,17 @@
     let currentStudent = '';
     let currentTopic = '';
     let currentCustomPrompt = '';
+    const NATURAL_CONVERSATION_PROMPT = `
+You are a warm, natural female English speaking coach having a real conversation with a learner.
+- Reply to the student's latest meaning first; do not sound like a questionnaire.
+- Use 1-2 short, speakable sentences (normally 8-22 words total) and natural contractions.
+- Ask at most one question per turn, only when it genuinely moves the conversation forward.
+- Never repeat a question, choices, praise, or wording already used in the recent chat.
+- Vary acknowledgements. Do not praise every message and avoid exaggerated phrases such as "Wonderful!" unless truly deserved.
+- If the student says thanks, okay, goodbye, or signals they are finished, acknowledge naturally and do not push the previous question again.
+- Keep vocabulary suitable for the learner's detected CEFR level.
+- Put language correction in the structured recast field; keep the spoken reply conversational.
+`;
     let currentFocusKnowledge = '';
     let chatHistory = [];
     let recognition = null;
@@ -643,29 +654,103 @@
       }
     }
     
+    let aeefVoices = [];
+    let speechRunId = 0;
+
+    function refreshSpeechVoices() {
+      if ('speechSynthesis' in window) aeefVoices = window.speechSynthesis.getVoices();
+    }
+
+    refreshSpeechVoices();
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.addEventListener('voiceschanged', refreshSpeechVoices);
+    }
+
+    function getNaturalEnglishVoice() {
+      const voices = aeefVoices.length ? aeefVoices : window.speechSynthesis.getVoices();
+      const englishVoices = voices.filter(v => /^en([_-]|$)/i.test(v.lang));
+      const preferredNames = [
+        /Microsoft (Aria|Jenny|Ava|Sonia|Libby).*Online/i,
+        /(Aria|Jenny|Ava|Sonia|Libby|Samantha|Zira)/i,
+        /Google US English/i,
+        /Natural/i
+      ];
+
+      for (const pattern of preferredNames) {
+        const match = englishVoices.find(v => pattern.test(v.name));
+        if (match) return match;
+      }
+      return englishVoices.find(v => /^en-US/i.test(v.lang)) || englishVoices[0] || null;
+    }
+
+    function prepareTextForSpeech(text) {
+      return String(text || '')
+        .replace(/```[\s\S]*?```/g, ' ')
+        .replace(/[*_#>`~]/g, '')
+        .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '')
+        .replace(/\bCEFR\b/g, 'C E F R')
+        .replace(/\bAEEF\b/g, 'A E E F')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    function splitSpeechPhrases(text) {
+      const sentences = text.match(/[^.!?]+[.!?]?/g) || [text];
+      const phrases = [];
+      sentences.forEach(sentence => {
+        const clean = sentence.trim();
+        if (clean.length <= 115) {
+          if (clean) phrases.push(clean);
+          return;
+        }
+        clean.split(/(?<=[,;:])\s+/).forEach(part => {
+          if (part.trim()) phrases.push(part.trim());
+        });
+      });
+      return phrases;
+    }
+
     function speakText(text) {
       if (!('speechSynthesis' in window)) return;
-      
+
+      const speechText = prepareTextForSpeech(text);
+      if (!speechText) return;
+
+      const runId = ++speechRunId;
+      const phrases = splitSpeechPhrases(speechText);
+      const voice = getNaturalEnglishVoice();
       window.speechSynthesis.cancel();
-      const utter = new SpeechSynthesisUtterance(text);
-      utter.lang = 'en-US';
-      utter.rate = 0.95;
+      animateTeacher('talk');
 
-      const voices = window.speechSynthesis.getVoices();
-      const bestVoice = voices.find(v => v.lang.includes('en') && (
-        v.name.includes('Natural') || 
-        v.name.includes('Google US English') || 
-        v.name.includes('Samantha') || 
-        v.name.includes('Jenny')
-      ));
+      function finishSpeaking() {
+        if (runId !== speechRunId) return;
+        animateTeacher('smile', 900);
+        setTimeout(() => {
+          if (runId === speechRunId) startListening();
+        }, 260);
+      }
 
-      if (bestVoice) utter.voice = bestVoice;
+      function speakNext(index) {
+        if (runId !== speechRunId) return;
+        if (index >= phrases.length) return finishSpeaking();
 
-      utter.onend = () => {
-        startListening();
-      };
+        const utter = new SpeechSynthesisUtterance(phrases[index]);
+        utter.lang = voice?.lang || 'en-US';
+        utter.voice = voice;
+        utter.rate = 0.91;
+        utter.pitch = 1.04;
+        utter.volume = 1;
+        utter.onend = () => setTimeout(() => speakNext(index + 1), 90);
+        utter.onerror = event => {
+          if (event.error !== 'canceled' && event.error !== 'interrupted') {
+            console.warn('Speech synthesis error:', event.error);
+          }
+          finishSpeaking();
+        };
+        window.speechSynthesis.speak(utter);
+      }
 
-      window.speechSynthesis.speak(utter);
+      speakNext(0);
     }
 
     function toggleMic() {
@@ -748,7 +833,7 @@
             topic: currentTopic,
             userMessage: text,
             chatHistory: chatHistory,
-            systemPrompt: currentCustomPrompt,
+            systemPrompt: `${currentCustomPrompt || ''}\n${NATURAL_CONVERSATION_PROMPT}`.trim(),
             focusKnowledge: currentFocusKnowledge,
             userApiKey: userCustomKey
           })
